@@ -75,41 +75,20 @@ export class InflowCore {
 
     this.directive("for", forDirective);
     this.directive(/^prop\-.+$/, propDirective);
-
-    for (const [alias, name] of Object.entries({
-      text: "prop-textcontent",
-    })) {
-      this.directive(alias, {
-        render: (ctx) => propDirective.render?.({ ...ctx, name }),
-      });
-    }
+    this.directiveAlias("text", "prop-textcontent");
 
     this.directive(/^attr\-.+$/, attrDirective);
-
-    for (const [alias, name] of Object.entries({
-      value: "attr-value",
-      href: "attr-href",
-    })) {
-      this.directive(alias, {
-        render: (ctx) => attrDirective.render?.({ ...ctx, name }),
-      });
-    }
+    this.directiveAlias("value", "attr-value");
+    this.directiveAlias("href", "attr-href");
 
     this.directive(/^battr\-.+$/, battrDirective);
-
-    for (const [alias, name] of Object.entries({
-      disabled: "battr-disabled",
-      readonly: "battr-readonly",
-      hidden: "battr-hidden",
-      checked: "battr-checked",
-      selected: "battr-selected",
-      required: "battr-required",
-      open: "battr-open",
-    })) {
-      this.directive(alias, {
-        render: (ctx) => battrDirective.render?.({ ...ctx, name }),
-      });
-    }
+    this.directiveAlias("disabled", "battr-disabled");
+    this.directiveAlias("readonly", "battr-readonly");
+    this.directiveAlias("hidden", "battr-hidden");
+    this.directiveAlias("checked", "battr-checked");
+    this.directiveAlias("selected", "battr-selected");
+    this.directiveAlias("required", "battr-required");
+    this.directiveAlias("open", "battr-open");
 
     this.directive(/^on\-.+$/, onDirective);
     this.directive("v8n", v8nDirective);
@@ -131,6 +110,12 @@ export class InflowCore {
         return new Date(value).toLocaleDateString(lang);
       },
     };
+  }
+
+  directiveAlias(alias: string, name: string) {
+    this.directive(alias, {
+      render: (ctx) => propDirective.render?.({ ...ctx, name }),
+    });
   }
 
   directive(
