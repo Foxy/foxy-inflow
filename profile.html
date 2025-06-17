@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + TS</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-source="portal.data.settings" data-cloak>
+      <div data-if="settings.isLoading">Loading...</div>
+      <div data-if="settings.isReady">
+        <div data-if="portal.isLoggedIn()">
+          <div data-source="portal.data.customer">
+            <h1>Profile</h1>
+
+            <p><a href="/">Return to home page</a></p>
+            <p data-if="customer.isLoading">Loading...</p>
+
+            <form
+              data-if="customer.isReady"
+              data-on-submit="customer.patch"
+              novalidate
+            >
+              <div>
+                <label for="first_name">First name:</label>
+                <input
+                  id="first_name"
+                  name="first_name"
+                  data-value="customer.first_name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="last_name">Last name:</label>
+                <input
+                  id="last_name"
+                  name="last_name"
+                  data-value="customer.last_name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="email">Email:</label>
+                <input
+                  id="email"
+                  type="email"
+                  name="email"
+                  data-value="customer.email"
+                  required
+                />
+              </div>
+
+              <div>
+                <label for="tax_id">Tax ID:</label>
+                <input
+                  id="tax_id"
+                  type="text"
+                  name="tax_id"
+                  data-value="customer.tax_id"
+                />
+              </div>
+
+              <br />
+              <button type="submit">Save</button>
+            </form>
+          </div>
+        </div>
+
+        <div data-if-not="portal.isLoggedIn()">
+          You are logged out. <a href="/sign_in">Sign in here</a>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@hcaptcha/vanilla-hcaptcha"></script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

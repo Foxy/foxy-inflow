@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + TS</title>
+    <style>
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-source="portal.data.settings" data-cloak>
+      <div data-if="settings.isLoading">Loading...</div>
+      <div data-if="settings.isReady">
+        <div
+          data-source="{ address: new URL(location.href).searchParams.get('href') }"
+        >
+          <h1>
+            <span
+              data-if-not="address.is_default_billing || address.is_default_shipping"
+              data-text="address.address_name"
+            >
+            </span>
+            <span data-if="address.is_default_billing">Billing address</span>
+            <span data-if="address.is_default_shipping">
+              Shipping address
+            </span>
+          </h1>
+
+          <p><a href="/">Return to home page</a></p>
+          <p data-if="address.isLoading">Loading...</p>
+
+          <form
+            data-if="address.isReady"
+            data-on-submit="address.patch"
+            novalidate
+          >
+            <div>
+              <label for="first_name">First name:</label>
+              <input
+                id="first_name"
+                name="first_name"
+                data-value="address.first_name"
+                data-ref="firstName"
+                data-v8n="portal.v8n.customerAddress.firstName"
+              />
+              <p
+                class="error-message"
+                data-if="refs.firstName.validationMessage === 'too_big'"
+              >
+                Unfortunately we can't store first names longer than 50
+                characters at the moment. Please fit in as much as you can and
+                contact us for help.
+              </p>
+            </div>
+
+            <div>
+              <label for="last_name">Last name:</label>
+              <input
+                id="last_name"
+                name="last_name"
+                data-value="address.last_name"
+                data-ref="lastName"
+                data-v8n="portal.v8n.customerAddress.lastName"
+              />
+              <p
+                class="error-message"
+                data-if="refs.lastName.validationMessage === 'too_big'"
+              >
+                Unfortunately we can't store last names longer than 50
+                characters at the moment. Please fit in as much as you can and
+                contact us for help.
+              </p>
+            </div>
+
+            <div>
+              <label for="company">Company:</label>
+              <input
+                id="company"
+                name="company"
+                data-value="address.company"
+                data-ref="company"
+                data-v8n="portal.v8n.customerAddress.company"
+              />
+              <p
+                class="error-message"
+                data-if="refs.company.validationMessage === 'too_big'"
+              >
+                Unfortunately we can't store company names longer than 50
+                characters at the moment. Please fit in as much as you can and
+                contact us for help.
+              </p>
+            </div>
+
+            <div>
+              <label for="phone">Phone:</label>
+              <input
+                id="phone"
+                name="phone"
+                data-value="address.phone"
+                data-ref="phone"
+                data-v8n="portal.v8n.customerAddress.phone"
+              />
+              <p
+                class="error-message"
+                data-if="refs.phone.validationMessage === 'too_big'"
+              >
+                This phone number appears to be too long. We only accept phone
+                numbers up to 50 characters.
+              </p>
+            </div>
+
+            <div>
+              <label for="address1">Address Line 1:</label>
+              <input
+                id="address1"
+                name="address1"
+                data-value="address.address1"
+                data-ref="address1"
+                data-v8n="portal.v8n.customerAddress.address1"
+                required
+              />
+              <p
+                class="error-message"
+                data-if="refs.address1.validationMessage === 'too_small'"
+              >
+                Please enter an address.
+              </p>
+              <p
+                class="error-message"
+                data-if="refs.address1.validationMessage === 'too_big'"
+              >
+                Line 1 of the address can contain up to 100 characters. Please
+                use line 2 for additional information.
+              </p>
+            </div>
+
+            <div>
+              <label for="address2">Address Line 2:</label>
+              <input
+                id="address2"
+                name="address2"
+                data-value="address.address2"
+                data-ref="address2"
+                data-v8n="portal.v8n.customerAddress.address2"
+              />
+              <p
+                class="error-message"
+                data-if="refs.address2.validationMessage === 'too_big'"
+              >
+                Line 2 of the address can contain up to 100 characters. If
+                you've used up both lines, please try to shorten the address or
+                contact us for help.
+              </p>
+            </div>
+
+            <div>
+              <label for="country">Country:</label>
+              <input
+                id="country"
+                name="country"
+                data-value="address.country"
+                data-ref="country"
+                data-v8n="portal.v8n.customerAddress.country"
+              />
+
+              <p
+                class="error-message"
+                data-if="refs.country.validationMessage === 'too_big'"
+              >
+                Country codes must be 2 characters long, e.g. "US" for the
+                United States, "DE" for Germany, etc.
+              </p>
+            </div>
+
+            <div>
+              <label for="region">Region:</label>
+              <input
+                id="region"
+                name="region"
+                data-value="address.region"
+                data-ref="region"
+                data-v8n="portal.v8n.customerAddress.region"
+              />
+
+              <p
+                class="error-message"
+                data-if="refs.region.validationMessage === 'too_big'"
+              >
+                We can store up to 50 characters for the region. If you need to
+                provide more information, please use the address lines.
+              </p>
+            </div>
+
+            <div>
+              <label for="city">City:</label>
+              <input
+                id="city"
+                name="city"
+                data-value="address.city"
+                data-ref="city"
+                data-v8n="portal.v8n.customerAddress.city"
+              />
+
+              <p
+                class="error-message"
+                data-if="refs.city.validationMessage === 'too_big'"
+              >
+                We can store up to 50 characters for the city. If you need to
+                provide more information, please use the address lines.
+              </p>
+            </div>
+
+            <div>
+              <label for="postal_code">Postal Code:</label>
+              <input
+                id="postal_code"
+                name="postal_code"
+                data-value="address.postal_code"
+                data-ref="postalCode"
+                data-v8n="portal.v8n.customerAddress.postalCode"
+              />
+
+              <p
+                class="error-message"
+                data-if="refs.postalCode.validationMessage === 'too_big'"
+              >
+                We can store up to 50 characters for the postal code. If you
+                need to provide more information, please use the address lines.
+              </p>
+            </div>
+
+            <br />
+
+            <button type="submit">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@hcaptcha/vanilla-hcaptcha"></script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + TS</title>
+    <style>
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-source="portal.data.settings" data-cloak>
+      <div data-if="settings.isLoading">Loading...</div>
+      <div data-if="settings.isReady">
+        <h1>Add payment method</h1>
+
+        <p><a href="/">Return to home page</a></p>
+
+        <form
+          data-on-submit="portal.createCcToken(portal.data.defaultPaymentMethod)"
+          novalidate
+        >
+          <input name="cc_token" type="hidden" />
+
+          <!-- This is likely a code embed in low-code builders so it has to stay separate. -->
+          <foxy-payment-card-embed
+            url="https://embed.foxy.io/v1.html?demo=default"
+          >
+          </foxy-payment-card-embed>
+          <script type="module">
+            import "https://cdn-js.foxy.io/elements@1/foxy-payment-card-embed.js";
+            customElements
+              .get("foxy-i18n")
+              .onResourceFetch((ns, lang) =>
+                fetch(
+                  `https://cdn-js.foxy.io/elements@1/translations/${ns}/${lang}.json`
+                )
+              );
+          </script>
+          <!-- End of code embed. -->
+
+          <br />
+
+          <button type="submit">Save changes</button>
+
+          <!-- <button
+            type="submit"
+            data-disabled="portal.defaultPaymentMethod.isSubmitting"
+          >
+            <span data-if="portal.defaultPaymentMethod.isSubmitting"
+              >Saving...</span
+            >
+            <span data-if-not="portal.defaultPaymentMethod.isSubmitting"
+              >Save</span
+            >
+          </button> -->
+        </form>
+
+        <!-- <p data-if="portal.defaultPaymentMethod.isDone">
+          You have successfully signed in. You will be redirected to the home
+          page shortly.
+        </p>
+
+        <p data-for="error in portal.defaultPaymentMethod.errors">
+          <span
+            data-if="error.code === 'unknown_error'"
+            data-text="error.message"
+          ></span>
+        </p> -->
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
