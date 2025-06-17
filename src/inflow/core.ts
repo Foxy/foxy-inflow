@@ -1,17 +1,17 @@
-import { DirectiveConfig, type DirectiveRenderer } from "./types";
 import { LRUCache } from "lru-cache";
 import { debounce } from "lodash-es";
-
-import sourceDirective from "./directives/source";
-import cloakDirective from "./directives/cloak";
-import battrDirective from "./directives/battr";
-import propDirective from "./directives/prop";
-import attrDirective from "./directives/attr";
-import v8nDirective from "./directives/v8n";
-import refDirective from "./directives/ref";
-import forDirective from "./directives/for";
-import ifDirective from "./directives/if";
-import onDirective from "./directives/on";
+import { Directive } from "./Directive";
+import { CloakDirective } from "./directives/cloak";
+import { RefDirective } from "./directives/ref";
+import { SourceDirective } from "./directives/source";
+import { IfDirective } from "./directives/if";
+import { IfNotDirective } from "./directives/if-not";
+import { ForDirective } from "./directives/for";
+import { PropDirective } from "./directives/prop";
+import { AttrDirective } from "./directives/attr";
+import { BAttrDirective } from "./directives/battr";
+import { OnDirective } from "./directives/on";
+import { V8NDirective } from "./directives/v8n";
 
 export type InflowCoreConfig = {
   onTokenExpiry?: () => void;
@@ -24,13 +24,9 @@ export type InflowCoreConfig = {
 export class InflowCore {
   #beforeUpdateHandlers: (() => void)[] = [];
 
-  #functionCache = new LRUCache<string, Function>({ max: 1000 });
+  #sourceDirective: SourceDirective;
 
-  #directives: {
-    name: string | RegExp;
-    handler?: DirectiveRenderer;
-    options?: Record<string, unknown>;
-  }[] = [];
+  #functionCache = new LRUCache<string, Function>({ max: 1000 });
 
   #prefix: string;
 
@@ -38,7 +34,11 @@ export class InflowCore {
 
   #root: ChildNode;
 
+  directiveAliases: Record<string, string> = {};
+
   globalContext: Record<string, unknown> = {};
+
+  directives: Directive[] = [];
 
   storage = localStorage; // TODO scoped local storage
 
@@ -55,43 +55,37 @@ export class InflowCore {
     this.#root = config?.root ?? document.body;
     this.base = config?.base ?? "";
 
-    this.directive("cloak", cloakDirective);
-    this.directive("ref", refDirective);
-    this.directive("source", sourceDirective, {
+    this.#sourceDirective = new SourceDirective({
+      prefix: "source",
+      inflow: this,
       getToken: config?.getToken,
       onTokenExpiry: config?.onTokenExpiry,
     });
 
-    this.directive("if", ifDirective);
-    this.directive("if-not", {
-      render: (ctx) => {
-        return ifDirective.render?.({
-          ...ctx,
-          value: `!(${ctx.value})`,
-          name: "if",
-        });
-      },
-    });
+    this.directives.push(
+      new CloakDirective({ prefix: "cloak", inflow: this }),
+      new RefDirective({ prefix: "ref", inflow: this }),
+      this.#sourceDirective,
+      new IfDirective({ prefix: "if", inflow: this }),
+      new IfNotDirective({ prefix: "if-not", inflow: this }),
+      new ForDirective({ prefix: "for", inflow: this }),
+      new PropDirective({ prefix: "prop-", inflow: this }),
+      new AttrDirective({ prefix: "attr-", inflow: this }),
+      new BAttrDirective({ prefix: "battr-", inflow: this }),
+      new OnDirective({ prefix: "on-", inflow: this }),
+      new V8NDirective({ prefix: "v8n", inflow: this })
+    );
 
-    this.directive("for", forDirective);
-    this.directive(/^prop\-.+$/, propDirective);
-    this.directiveAlias("text", "prop-textcontent");
-
-    this.directive(/^attr\-.+$/, attrDirective);
-    this.directiveAlias("value", "attr-value");
-    this.directiveAlias("href", "attr-href");
-
-    this.directive(/^battr\-.+$/, battrDirective);
-    this.directiveAlias("disabled", "battr-disabled");
-    this.directiveAlias("readonly", "battr-readonly");
-    this.directiveAlias("hidden", "battr-hidden");
-    this.directiveAlias("checked", "battr-checked");
-    this.directiveAlias("selected", "battr-selected");
-    this.directiveAlias("required", "battr-required");
-    this.directiveAlias("open", "battr-open");
-
-    this.directive(/^on\-.+$/, onDirective);
-    this.directive("v8n", v8nDirective);
+    this.directiveAliases["text"] = "prop-textcontent";
+    this.directiveAliases["value"] = "attr-value";
+    this.directiveAliases["href"] = "attr-href";
+    this.directiveAliases["disabled"] = "battr-disabled";
+    this.directiveAliases["readonly"] = "battr-readonly";
+    this.directiveAliases["hidden"] = "battr-hidden";
+    this.directiveAliases["checked"] = "battr-checked";
+    this.directiveAliases["selected"] = "battr-selected";
+    this.directiveAliases["required"] = "battr-required";
+    this.directiveAliases["open"] = "battr-open";
 
     this.globalContext.format = {
       currency: (value: string, lang = navigator.language) => {
@@ -112,24 +106,8 @@ export class InflowCore {
     };
   }
 
-  directiveAlias(alias: string, name: string) {
-    this.directive(alias, {
-      render: (ctx) => propDirective.render?.({ ...ctx, name }),
-    });
-  }
-
-  directive(
-    name: string | RegExp,
-    config: DirectiveConfig,
-    options?: Record<string, unknown>
-  ) {
-    this.#directives.push({ name, handler: config.render, options });
-    config.create?.(
-      this.globalContext,
-      this.storage,
-      this.requestUpdate,
-      options
-    );
+  createSource(name: string, url: string): Record<string, string> {
+    return this.#sourceDirective.createSource(name, url);
   }
 
   render(
@@ -149,15 +127,16 @@ export class InflowCore {
     const lang = _lang ?? this.#getLang(node);
 
     if (node instanceof Element) {
-      for (const directive of this.#directives) {
-        const { name, handler, options } = directive;
-
+      for (const directive of this.directives) {
         const attribute = Array.from(node.attributes).find(({ name: key }) => {
           if (!key.startsWith(this.#prefix)) return false;
+
           const strippedKey = key.substring(this.#prefix.length);
-          return typeof name === "string"
-            ? strippedKey === name
-            : name.test(strippedKey);
+          const resolvedKey = this.directiveAliases[strippedKey] ?? strippedKey;
+
+          return directive.prefix.endsWith("-")
+            ? resolvedKey.startsWith(directive.prefix)
+            : resolvedKey === directive.prefix;
         });
 
         if (attribute) {
@@ -166,13 +145,16 @@ export class InflowCore {
             lang,
           });
 
-          const result = handler?.({
+          const strippedName = attribute.name.substring(this.#prefix.length);
+          const resolvedName =
+            this.directiveAliases[strippedName] ?? strippedName;
+
+          const result = directive.apply({
             isStashed,
             context: handlerContext,
             storage: this.storage,
-            options,
             value: attribute.value,
-            name: attribute.name.substring(this.#prefix.length),
+            name: resolvedName,
             attributeName: attribute.name,
             placeholderHost: isStashed ? (_node as Comment) : null,
             host: node,

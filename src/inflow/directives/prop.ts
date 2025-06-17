@@ -1,10 +1,13 @@
-import type { DirectiveConfig } from "../types";
+import { get, set } from "lodash-es";
+import {
+  type DirectiveRendererParams,
+  type DirectiveRendererResult,
+  Directive,
+} from "../Directive";
 
-import get from "lodash-es/get";
-import set from "lodash-es/set";
-
-const config: DirectiveConfig = {
-  render: ({ host, value, name, run }) => {
+export class PropDirective extends Directive {
+  apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
+    const { host, value, name, run } = params;
     const lowercasePropertyName = name.replace("prop-", "");
     let resolvedPropertyName = lowercasePropertyName;
 
@@ -18,7 +21,5 @@ const config: DirectiveConfig = {
     const oldValue = get(host, resolvedPropertyName);
     const newValue = run(value);
     if (newValue !== oldValue) set(host, resolvedPropertyName, run(value));
-  },
-};
-
-export default config;
+  }
+}

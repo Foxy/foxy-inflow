@@ -1,17 +1,24 @@
-import type { DirectiveConfig } from "../types";
-import get from "lodash-es/get";
+import {
+  type DirectiveRendererParams,
+  type DirectiveRendererResult,
+  Directive,
+} from "../Directive";
 
-const templateInstances = new WeakMap<ChildNode, WeakSet<ChildNode>>();
+import { get } from "lodash-es";
 
-const config: DirectiveConfig = {
-  render: ({
-    context,
-    host: template,
-    placeholderHost,
-    value,
-    adopt,
-    attributeName,
-  }) => {
+export class ForDirective extends Directive {
+  #templateInstances = new WeakMap<ChildNode, WeakSet<ChildNode>>();
+
+  apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
+    const {
+      context,
+      host: template,
+      placeholderHost,
+      value,
+      adopt,
+      attributeName,
+    } = params;
+
     const [loop, source] = value.split(" in ");
     const [reference, indexRef = "index"] = loop
       .split(",")
@@ -27,7 +34,7 @@ const config: DirectiveConfig = {
     const siblingsAfterTemplate = templateSiblings.slice(templateIndex + 1);
 
     const instances =
-      templateInstances.get(template) ?? new WeakSet<ChildNode>();
+      this.#templateInstances.get(template) ?? new WeakSet<ChildNode>();
     const instancesToRemove: ChildNode[] = [];
     const instancesToAdd: ChildNode[] = [];
 
@@ -64,7 +71,7 @@ const config: DirectiveConfig = {
       const reverseSiblings = [...templateSiblings].reverse();
       const reverseInstancesToAdd = [...instancesToAdd].reverse();
       const lastInstance = reverseSiblings.find((sibling) => {
-        return templateInstances.has(sibling);
+        return this.#templateInstances.has(sibling);
       });
 
       for (const instance of reverseInstancesToAdd) {
@@ -73,10 +80,8 @@ const config: DirectiveConfig = {
       }
     }
 
-    templateInstances.set(template, instances);
+    this.#templateInstances.set(template, instances);
 
     return { skipChildren: true, isStashed: true };
-  },
-};
-
-export default config;
+  }
+}

@@ -1,9 +1,14 @@
-import type { DirectiveConfig } from "../types";
+import {
+  type DirectiveRendererParams,
+  type DirectiveRendererResult,
+  Directive,
+} from "../Directive";
 
-const initializedInputs = new WeakSet<HTMLInputElement>();
+export class V8NDirective extends Directive {
+  #initializedInputs = new WeakSet<HTMLInputElement>();
 
-const config: DirectiveConfig = {
-  render: ({ update, host, value, run }) => {
+  apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
+    const { host, value, run, update } = params;
     const validator = run<(value: string) => string>(value);
     const validate = (input: HTMLInputElement) => {
       input.setCustomValidity(validator(input.value));
@@ -17,11 +22,9 @@ const config: DirectiveConfig = {
     });
 
     validate(host as HTMLInputElement);
-    if (!initializedInputs.has(host as HTMLInputElement)) {
-      initializedInputs.add(host as HTMLInputElement);
+    if (!this.#initializedInputs.has(host as HTMLInputElement)) {
+      this.#initializedInputs.add(host as HTMLInputElement);
       update();
     }
-  },
-};
-
-export default config;
+  }
+}

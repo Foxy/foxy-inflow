@@ -1,4 +1,3 @@
-import { createSource } from "./directives/source";
 import { InflowCore } from "./core";
 import { z } from "zod";
 
@@ -310,57 +309,45 @@ export class InflowPortal extends InflowCore {
       },
 
       data: {
-        defaultPaymentMethod: createSource(
-          this.globalContext,
+        defaultPaymentMethod: this.createSource(
           "defaultPaymentMethod",
-          `${this.base}default_payment_method`,
-          {}
+          `${this.base}default_payment_method`
         ),
 
-        pastDueSubscriptions: createSource(
-          this.globalContext,
+        pastDueSubscriptions: this.createSource(
           "pastDueSubscriptions",
           `${this.base}subscriptions?past_due_amount:greaterthan=0`
         ),
 
-        activeSubscriptions: createSource(
-          this.globalContext,
+        activeSubscriptions: this.createSource(
           "activeSubscriptions",
           `${this.base}subscriptions?is_active=true`
         ),
 
-        subscriptions: createSource(
-          this.globalContext,
+        subscriptions: this.createSource(
           "subscriptions",
           `${this.base}subscriptions`
         ),
 
-        transactions: createSource(
-          this.globalContext,
+        transactions: this.createSource(
           "transactions",
           `${this.base}transactions?zoom=items`
         ),
 
-        addresses: createSource(
-          this.globalContext,
-          "addresses",
-          `${this.base}addresses`
-        ),
+        addresses: this.createSource("addresses", `${this.base}addresses`),
 
-        settings: createSource(
-          this.globalContext,
+        settings: this.createSource(
           "settings",
           `${this.base}customer_portal_settings`
         ),
 
-        customer: createSource(this.globalContext, "customer", this.base),
+        customer: this.createSource("customer", this.base),
 
         customerAttributesByName: (
           name: string,
           contextKey = "customerAttributesByName"
         ) =>
-          createSource(
-            this.globalContext,
+          this.createSource(
             contextKey,
             `${this.base}customer/attributes?name=${name}`
           ),
@@ -369,15 +356,13 @@ export class InflowPortal extends InflowCore {
           sku: string,
           contextKey = "activeSubscriptionsBySku"
         ) =>
-          createSource(
-            this.globalContext,
+          this.createSource(
             contextKey,
             `${this.base}subscriptions?is_active=true&items:code=${sku}&zoom=items`
           ),
 
         transactionsBySku: (sku: string, contextKey = "transactionsBySku") =>
-          createSource(
-            this.globalContext,
+          this.createSource(
             contextKey,
             `${this.base}transactions?zoom=items&items:code=${sku}`
           ),

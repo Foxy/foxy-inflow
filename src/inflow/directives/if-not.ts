@@ -4,13 +4,13 @@ import {
   Directive,
 } from "../Directive";
 
-export class IfDirective extends Directive {
+export class IfNotDirective extends Directive {
   apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
     const { value, run } = params;
     let newValue: boolean;
 
     try {
-      newValue = !run(value);
+      newValue = !!run(value);
     } catch (err) {
       console.warn("Error evaluating 'if' directive:", err);
       newValue = false; // Default to false if evaluation fails

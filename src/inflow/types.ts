@@ -1,5 +1,4 @@
-export type DirectiveRenderer = (params: {
-  options?: Record<string, unknown>;
+export type DirectiveRendererParams = {
   context: Record<string, unknown>;
   storage: Storage;
   update: () => void;
@@ -15,11 +14,17 @@ export type DirectiveRenderer = (params: {
     value: string,
     additionalContext?: Record<string, unknown>
   ) => T;
-}) => {
+};
+
+export type DirectiveRendererResult = {
   skipChildren?: boolean;
   beforeUpdate?: () => void;
   isStashed?: boolean;
-} | void;
+};
+
+export type DirectiveRenderer = (
+  params: DirectiveRendererParams
+) => DirectiveRendererResult | void;
 
 export type DirectiveConfig = {
   render?: DirectiveRenderer;

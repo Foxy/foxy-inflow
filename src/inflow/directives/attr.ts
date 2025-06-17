@@ -1,15 +1,17 @@
-import type { DirectiveConfig } from "../types";
+import {
+  type DirectiveRendererParams,
+  type DirectiveRendererResult,
+  Directive,
+} from "../Directive";
 
-const config: DirectiveConfig = {
-  render: ({ host, value, name, run }) => {
-    console.debug("attr directive", { host, value, name });
+export class AttrDirective extends Directive {
+  apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
+    const { host, value, name, run } = params;
     if (host instanceof Element === false) return;
 
-    const attributeName = name.replace("attr-", "");
+    const attributeName = name.replace(this.prefix, "");
     const oldValue = host.getAttribute(attributeName);
     const newValue = String(run(value));
     if (newValue !== oldValue) host.setAttribute(attributeName, newValue);
-  },
-};
-
-export default config;
+  }
+}
