@@ -30,33 +30,3 @@ export type DirectiveConfig = {
     options?: Record<string, unknown>
   ) => void;
 };
-
-export type PluginConfig = {
-  create?: (
-    context: Inflow,
-    options?: Record<string, unknown>
-  ) => Record<string, unknown>;
-};
-
-export type Inflow = {
-  globalContext: Record<string, unknown>;
-  storage: Storage;
-  render: (
-    element?: Element,
-    context?: Record<string, any>,
-    processedNodes?: WeakSet<Node>,
-    lang?: string
-  ) => void;
-  requestUpdate: () => void;
-  directive: (
-    name: string | RegExp,
-    config: DirectiveConfig,
-    options?: Record<string, unknown>
-  ) => void;
-  plugin: (
-    name: string,
-    config: PluginConfig,
-    options?: Record<string, unknown>
-  ) => void;
-  base: string;
-};
