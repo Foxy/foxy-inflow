@@ -110,6 +110,108 @@ export class InflowCore {
     return this.#sourceDirective.createSource(name, url);
   }
 
+  createAction(
+    path: string,
+    bearerToken: string | null,
+    messageToCode: Record<string, string>,
+    jsonFields?: string[],
+    onSuccess?: (response: any) => void
+  ) {
+    let state: "idle" | "busy" | "fail" | "done" = "idle";
+    let errors: { code: string; message: string }[] = [];
+
+    return new Proxy(
+      (evt: SubmitEvent) => {
+        evt.preventDefault();
+        if (state === "busy") return;
+
+        const form = evt.currentTarget as HTMLFormElement;
+        if (!form.checkValidity()) return;
+
+        const formData = new FormData(form);
+
+        state = "busy";
+        errors = [];
+        this.requestUpdate();
+
+        const body = Object.fromEntries(formData);
+
+        jsonFields?.forEach((field) => {
+          const value = formData.get(field);
+          if (value) {
+            try {
+              body[field] = JSON.parse(value as string);
+            } catch (e) {
+              console.error(`Failed to parse JSON for field ${field}:`, e);
+            }
+          }
+        });
+
+        fetch(`${this.base}${path}`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "foxy-api-version": "1",
+            ...(bearerToken ? { authorization: `Bearer ${bearerToken}` } : {}),
+          },
+          body: JSON.stringify(body),
+        })
+          .then((response) =>
+            response.ok ? response.json() : Promise.reject(response)
+          )
+          .then((data) => {
+            state = "done";
+            this.requestUpdate();
+            onSuccess?.(data);
+          })
+          .catch((err) => {
+            state = "fail";
+            errors = [{ code: "unknown_error", message: String(err) }];
+
+            if (err instanceof Response) {
+              err.json().then((data) => {
+                if (data._embedded?.["fx:errors"]) {
+                  errors = data._embedded?.["fx:errors"].map(
+                    (error: { message: string }) => {
+                      const message = error.message;
+                      return {
+                        code: messageToCode[message] || "unknown_error",
+                        message,
+                      };
+                    }
+                  );
+                } else {
+                }
+                this.requestUpdate();
+              });
+            } else {
+              this.requestUpdate();
+              console.error(err);
+            }
+          });
+      },
+      {
+        get: (target, key) => {
+          if (key === "isSubmitting") return state === "busy";
+          if (key === "isFailed") return state === "fail";
+          if (key === "isIdle") return state === "idle";
+          if (key === "isDone") return state === "done";
+          if (key === "errors") return errors;
+          if (key === "reset")
+            return () => {
+              if (state === "fail") {
+                state = "idle";
+                errors = [];
+                this.requestUpdate();
+              }
+            };
+
+          return Reflect.get(target, key);
+        },
+      }
+    );
+  }
+
   render(
     _node: ChildNode = this.#root,
     context: Record<string, any> = this.globalContext,
