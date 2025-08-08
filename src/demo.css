@@ -55,8 +55,8 @@ html,
 body {
   margin: 0;
   font-size: 12pt;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue",
+    sans-serif;
   color: var(--text);
   background: var(--background-body);
 }
@@ -524,8 +524,7 @@ progress::-moz-progress-bar {
 }
 
 progress:indeterminate {
-  background: var(--background-main)
-    linear-gradient(to right, var(--links) 35%, var(--background-main) 35%) top
+  background: var(--background-main) linear-gradient(to right, var(--links) 35%, var(--background-main) 35%) top
     left/150% 150% no-repeat;
   animation: progress-indeterminate 1s linear infinite;
 }
@@ -604,8 +603,4 @@ dialog {
 
 body {
   margin: 1rem;
-}
-
-input:not(:user-invalid) ~ .error-message {
-  display: none;
 }

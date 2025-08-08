@@ -10,21 +10,17 @@ export type DirectiveRendererParams = {
   base: string;
   name: string;
   attributeName: string;
-  run: <T = unknown>(
-    value: string,
-    additionalContext?: Record<string, unknown>
-  ) => T;
+  run: <T = unknown>(value: string, additionalContext?: Record<string, unknown>) => T;
 };
 
 export type DirectiveRendererResult = {
   skipChildren?: boolean;
   beforeUpdate?: () => void;
+  afterUpdate?: () => void;
   isStashed?: boolean;
 };
 
-export type DirectiveRenderer = (
-  params: DirectiveRendererParams
-) => DirectiveRendererResult | void;
+export type DirectiveRenderer = (params: DirectiveRendererParams) => DirectiveRendererResult | void;
 
 export type DirectiveConfig = {
   render?: DirectiveRenderer;

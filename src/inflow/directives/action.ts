@@ -1,8 +1,4 @@
-import {
-  type DirectiveRendererParams,
-  type DirectiveRendererResult,
-  Directive,
-} from "../Directive";
+import { type DirectiveRendererParams, type DirectiveRendererResult, Directive } from "../Directive";
 
 export class ActionDirective extends Directive {
   apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
@@ -16,14 +12,21 @@ export class ActionDirective extends Directive {
     };
   }
 
-  createAction(
-    path: string,
-    bearerToken: string | null,
-    messageToCode: Record<string, string>,
-    jsonFields?: string[],
-    onSuccess?: (response: any) => void,
-    onSubmit?: (form: HTMLFormElement, data: FormData) => Promise<void>
-  ) {
+  createAction({
+    path,
+    bearerToken,
+    v8n: messageToCode,
+    jsonFields,
+    onSuccess,
+    onSubmit,
+  }: {
+    path: string;
+    bearerToken?: string;
+    v8n?: Record<string, string>;
+    jsonFields?: string[];
+    onSuccess?: (response: any) => void;
+    onSubmit?: (form: HTMLFormElement, data: FormData) => Promise<void>;
+  }) {
     let state: "idle" | "busy" | "fail" | "done" = "idle";
     let errors: { code: string; message: string }[] = [];
 
@@ -35,14 +38,16 @@ export class ActionDirective extends Directive {
         const form = evt.currentTarget as HTMLFormElement;
         if (!form.checkValidity()) return;
 
+        Array.from(form.elements).forEach((element) => {
+          if ("disabled" in element) element.toggleAttribute("disabled", true);
+        });
+
         const formData = new FormData(form);
         state = "busy";
         errors = [];
         this.inflow.requestUpdate();
 
-        const onSubmitPromise = onSubmit
-          ? onSubmit(form, formData)
-          : Promise.resolve();
+        const onSubmitPromise = onSubmit ? onSubmit(form, formData) : Promise.resolve();
 
         onSubmitPromise
           .then(() => {
@@ -64,15 +69,11 @@ export class ActionDirective extends Directive {
               headers: {
                 "content-type": "application/json",
                 "foxy-api-version": "1",
-                ...(bearerToken
-                  ? { authorization: `Bearer ${bearerToken}` }
-                  : {}),
+                ...(bearerToken ? { authorization: `Bearer ${bearerToken}` } : {}),
               },
               body: JSON.stringify(body),
             })
-              .then((response) =>
-                response.ok ? response.json() : Promise.reject(response)
-              )
+              .then((response) => (response.ok ? response.json() : Promise.reject(response)))
               .then((data) => {
                 state = "done";
                 this.inflow.requestUpdate();
@@ -85,21 +86,33 @@ export class ActionDirective extends Directive {
                 if (err instanceof Response) {
                   err.json().then((data) => {
                     if (data._embedded?.["fx:errors"]) {
-                      errors = data._embedded?.["fx:errors"].map(
-                        (error: { message: string }) => {
+                      errors = data._embedded?.["fx:errors"]
+                        .map((error: { message: string }) => {
                           const message = error.message;
                           return {
-                            code: messageToCode[message] || "unknown_error",
+                            code: messageToCode?.[message] || "unknown_error",
                             message,
                           };
-                        }
-                      );
+                        })
+                        .filter((error: { code: string; message: string }) => {
+                          const [_, fieldName] = error.code.split(".");
+                          const field = form.elements.namedItem(fieldName);
+                          if (field instanceof HTMLInputElement) {
+                            field.setCustomValidity(error.message);
+                            return false;
+                          } else {
+                            return true;
+                          }
+                        });
                     } else {
+                      errors = [{ code: "unknown_error", message: String(err) }];
                     }
                     this.inflow.requestUpdate();
+                    form.reportValidity();
                   });
                 } else {
                   this.inflow.requestUpdate();
+                  form.reportValidity();
                   console.error(err);
                 }
               });
@@ -109,6 +122,11 @@ export class ActionDirective extends Directive {
             state = "fail";
             errors = [{ code: "unknown_error", message: String(err) }];
             this.inflow.requestUpdate();
+          })
+          .finally(() => {
+            Array.from(form.elements).forEach((element) => {
+              if ("disabled" in element) element.toggleAttribute("disabled", false);
+            });
           });
       },
       {

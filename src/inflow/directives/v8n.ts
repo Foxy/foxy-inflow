@@ -1,30 +1,40 @@
-import {
-  type DirectiveRendererParams,
-  type DirectiveRendererResult,
-  Directive,
-} from "../Directive";
+import { type DirectiveRendererParams, type DirectiveRendererResult, Directive } from "../Directive";
 
 export class V8NDirective extends Directive {
-  #initializedInputs = new WeakSet<HTMLInputElement>();
+  #initializedForms = new WeakSet<HTMLFormElement>();
 
   apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
     const { host, value, run, update } = params;
-    const validator = run<(value: string) => string>(value);
+    const validatorCollection = run<Record<string, (value: string) => string>>(value);
+
     const validate = (input: HTMLInputElement) => {
-      input.setCustomValidity(validator(input.value));
+      const validator = validatorCollection[input.name];
+      if (validator) input.setCustomValidity(validator(input.value));
+    };
+
+    const onEvent = (event: Event) => {
+      validate(event.target as HTMLInputElement);
+      update();
     };
 
     ["input", "change"].forEach((eventType) => {
-      host.addEventListener(eventType, (event) => {
-        validate(event.currentTarget as HTMLInputElement);
-        update();
-      });
+      host.addEventListener(eventType, onEvent);
     });
 
-    validate(host as HTMLInputElement);
-    if (!this.#initializedInputs.has(host as HTMLInputElement)) {
-      this.#initializedInputs.add(host as HTMLInputElement);
-      update();
-    }
+    return {
+      beforeUpdate: () => {
+        ["input", "change"].forEach((eventType) => {
+          host.removeEventListener(eventType, onEvent);
+        });
+      },
+      afterUpdate: () => {
+        if (!this.#initializedForms.has(host as HTMLFormElement)) {
+          this.#initializedForms.add(host as HTMLFormElement);
+          Array.from((host as HTMLFormElement).elements).forEach((element) => {
+            if (element instanceof HTMLInputElement) validate(element);
+          });
+        }
+      },
+    };
   }
 }

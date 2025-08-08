@@ -12,117 +12,26 @@
     </style>
   </head>
   <body>
-    <div data-source="portal.data.settings" data-cloak>
-      <div data-if="settings.isLoading">Loading...</div>
-      <div data-if="settings.isReady">
-        <h1>Sign in</h1>
+    <div data-cloak>
+      <h1>Sign in</h1>
 
-        <form data-action="portal.signIn" novalidate>
-          <div>
-            <label for="email">Email:</label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              data-ref="email"
-              data-v8n="portal.v8n.signIn.email"
-              data-disabled="portal.signIn.isSubmitting"
-            />
-            <p
-              class="error-message"
-              data-if="refs.email.validationMessage === 'too_small'"
-            >
-              Please enter an email.
-            </p>
-            <p
-              class="error-message"
-              data-if="refs.email.validationMessage === 'invalid_string'"
-            >
-              Please enter a valid email.
-            </p>
-            <p
-              class="error-message"
-              data-if="refs.email.validationMessage === 'too_big'"
-            >
-              This email is too long. We only accept emails up to 100
-              characters.
-            </p>
-          </div>
+      <p data-if="portal.isLoggedIn()">You are already logged in. <a href="/">Please visit your portal here.</a></p>
 
-          <div>
-            <label for="password">Password:</label>
-            <input
-              id="password"
-              type="password"
-              name="password"
-              data-ref="password"
-              data-v8n="portal.v8n.signIn.password"
-              data-disabled="portal.signIn.isSubmitting"
-            />
-            <p
-              class="error-message"
-              data-if="refs.password.validationMessage === 'too_small'"
-            >
-              Please enter a password.
-            </p>
-            <p
-              class="error-message"
-              data-if="refs.password.validationMessage === 'invalid_string'"
-            >
-              Please enter a valid password.
-            </p>
-            <p
-              class="error-message"
-              data-if="refs.password.validationMessage === 'too_big'"
-            >
-              This password is too long. We only accept passwords up to 50
-              characters.
-            </p>
-          </div>
+      <form data-if-not="portal.isLoggedIn()" data-v8n="portal.v8n.signIn" data-action="portal.signIn">
+        <label>Email:<br /><input name="email" type="email" /></label>
+        <label>Password:<br /><input name="password" type="password" /></label>
 
-          <button type="submit" data-disabled="portal.signIn.isSubmitting">
-            <span data-if="portal.signIn.isSubmitting"> Sending... </span>
-            <span data-if-not="portal.signIn.isSubmitting"> Sign in </span>
-          </button>
-        </form>
+        <button>
+          <span data-if="portal.signIn.isSubmitting">Signing in...</span>
+          <span data-if-not="portal.signIn.isSubmitting">Sign in</span>
+        </button>
+      </form>
 
-        <p data-if="portal.signIn.isDone">
-          You have successfully signed in. You will be redirected to the home
-          page shortly.
-        </p>
+      <p data-for="error in portal.signIn.errors" aria-live="polite">
+        <span data-text="error.message"></span>
+      </p>
 
-        <p data-for="error in portal.signIn.errors">
-          <span data-if="error.code === 'email_too_long'">
-            The email you provided is too long. We only accept emails up to 100
-            characters.
-          </span>
-          <span data-if="error.code === 'email_invalid'">
-            The email you provided is not valid. Please check the email and try
-            again.
-          </span>
-          <span data-if="error.code === 'email_required'">
-            Please provide an email address to sign in.
-          </span>
-          <span
-            data-if="error.code === 'unknown_error'"
-            data-text="error.message"
-          ></span>
-          <span data-if="error.code === 'password_too_long'">
-            The password you provided is too long. We only accept passwords up
-            to 50 characters.
-          </span>
-          <span data-if="error.code === 'password_required'">
-            Please provide a password to sign in.
-          </span>
-          <span
-            data-if="error.code === 'unknown_error'"
-            data-text="error.message"
-          ></span>
-        </p>
-
-        <div><a href="/reset_password">Forgot password?</a></div>
-        <div><a href="/create_account">Create an account</a></div>
-      </div>
+      <p><a href="/reset_password">Forgot password?</a> &bull; <a href="/create_account">Create an account</a></p>
     </div>
 
     <script type="module" src="/src/demo.ts"></script>

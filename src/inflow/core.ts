@@ -27,6 +27,8 @@ export type InflowCoreConfig = {
 export class InflowCore {
   #beforeUpdateHandlers: (() => void)[] = [];
 
+  #afterUpdateHandlers: (() => void)[] = [];
+
   #sourceDirective: SourceDirective;
 
   #actionDirective: ActionDirective;
@@ -47,12 +49,18 @@ export class InflowCore {
 
   storage = localStorage; // TODO scoped local storage
 
+  createAction: ActionDirective["createAction"];
+
+  createSource: SourceDirective["createSource"];
+
   base: string;
 
   requestUpdate = debounce(() => {
     this.#beforeUpdateHandlers.forEach((fn) => fn());
     this.#beforeUpdateHandlers.length = 0;
+    this.#afterUpdateHandlers.length = 0;
     this.render();
+    this.#afterUpdateHandlers.forEach((fn) => fn());
   }, 250);
 
   constructor(config?: InflowCoreConfig) {
@@ -101,22 +109,17 @@ export class InflowCore {
 
     Object.entries(config?.directiveAliases ?? {}).forEach(([key, value]) => {
       if (this.#directiveAliases[key]) {
-        console.warn(
-          `Overriding existing directive alias for "${key}" with "${value}".`
-        );
+        console.warn(`Overriding existing directive alias for "${key}" with "${value}".`);
       }
       this.#directiveAliases[key] = value;
     });
 
     this.globalContext.format = {
       currency: (value: string, lang = navigator.language) => {
-        return parseFloat(value.substring(0, value.length - 3)).toLocaleString(
-          lang,
-          {
-            currency: value.substring(value.length - 3).toLowerCase(),
-            style: "currency",
-          }
-        );
+        return parseFloat(value.substring(0, value.length - 3)).toLocaleString(lang, {
+          currency: value.substring(value.length - 3).toLowerCase(),
+          style: "currency",
+        });
       },
       datetime: (value: string, lang = navigator.language) => {
         return new Date(value).toLocaleString(lang);
@@ -125,28 +128,9 @@ export class InflowCore {
         return new Date(value).toLocaleDateString(lang);
       },
     };
-  }
 
-  createSource(name: string, url: string): Record<string, string> {
-    return this.#sourceDirective.createSource(name, url);
-  }
-
-  createAction(
-    path: string,
-    bearerToken: string | null,
-    messageToCode: Record<string, string>,
-    jsonFields?: string[],
-    onSuccess?: (response: any) => void,
-    onSubmit?: (form: HTMLFormElement, data: FormData) => Promise<void>
-  ) {
-    return this.#actionDirective.createAction(
-      path,
-      bearerToken,
-      messageToCode,
-      jsonFields,
-      onSuccess,
-      onSubmit
-    );
+    this.createAction = this.#actionDirective.createAction.bind(this.#actionDirective);
+    this.createSource = this.#sourceDirective.createSource.bind(this.#sourceDirective);
   }
 
   render(
@@ -155,8 +139,7 @@ export class InflowCore {
     processedNodes = new WeakSet<ChildNode>(),
     _lang?: string
   ) {
-    const node =
-      _node instanceof Comment ? this.#stash.get(_node) ?? _node : _node;
+    const node = _node instanceof Comment ? this.#stash.get(_node) ?? _node : _node;
 
     // Is this truly necessary?
     if (processedNodes.has(node)) return;
@@ -171,8 +154,7 @@ export class InflowCore {
           if (!key.startsWith(this.#prefix)) return false;
 
           const strippedKey = key.substring(this.#prefix.length);
-          const resolvedKey =
-            this.#directiveAliases[strippedKey] ?? strippedKey;
+          const resolvedKey = this.#directiveAliases[strippedKey] ?? strippedKey;
 
           return directive.prefix.endsWith("-")
             ? resolvedKey.startsWith(directive.prefix)
@@ -186,9 +168,7 @@ export class InflowCore {
           });
 
           const strippedName = attribute.name.substring(this.#prefix.length);
-          const resolvedName =
-            this.#directiveAliases[strippedName] ?? strippedName;
-
+          const resolvedName = this.#directiveAliases[strippedName] ?? strippedName;
           const result = directive.apply({
             isStashed,
             context: handlerContext,
@@ -206,9 +186,8 @@ export class InflowCore {
             run: this.#createCachedFunction(handlerContext),
           });
 
-          if (result?.beforeUpdate) {
-            this.#beforeUpdateHandlers.push(result.beforeUpdate);
-          }
+          if (result?.beforeUpdate) this.#beforeUpdateHandlers.push(result.beforeUpdate);
+          if (result?.afterUpdate) this.#afterUpdateHandlers.push(result.afterUpdate);
 
           if (!!result?.isStashed !== isStashed) {
             if (result?.isStashed) {
@@ -233,11 +212,7 @@ export class InflowCore {
 
   #getLang(node: ChildNode, defaultValue = navigator.language): string {
     if (node instanceof Element) {
-      return (
-        node.getAttribute("lang") ||
-        node.closest<Element>("[lang]")?.getAttribute("lang") ||
-        defaultValue
-      );
+      return node.getAttribute("lang") || node.closest<Element>("[lang]")?.getAttribute("lang") || defaultValue;
     } else {
       return defaultValue;
     }
