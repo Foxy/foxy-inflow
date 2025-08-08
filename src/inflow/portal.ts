@@ -104,18 +104,35 @@ export class InflowPortal extends InflowCore {
           }
         },
 
-      createAccount: (evt: SubmitEvent) => {
-        const form = evt.currentTarget as HTMLFormElement;
-        const data = new FormData(form);
-        const verification = data.get("verification");
-
-        if (!verification) {
-          evt.preventDefault();
-
+      createAccount: this.createAction(
+        "sign_up",
+        null,
+        {
+          "data.first_name should NOT be longer than 50 characters":
+            "first_name_too_long",
+          "data.first_name should be string": "first_name_required",
+          "data.last_name should NOT be longer than 50 characters":
+            "last_name_too_long",
+          "data.last_name should be string": "last_name_required",
+          "data.email should NOT be longer than 100 characters":
+            "email_too_long",
+          'data.email should match format "email"': "email_invalid",
+          "data.email should be string": "email_required",
+          "data.password should NOT be longer than 50 characters":
+            "password_too_long",
+          "data.password should be string": "password_required",
+        },
+        ["verification"],
+        (data) => {
+          this.#setSession(data);
+          location.href = config.homePageUrl;
+        },
+        async (form, data) => {
           type HCaptchaElement = HTMLElement & {
             clear: () => void;
             execute: () => void;
           };
+
           const hCaptcha = form.querySelector<HCaptchaElement>("h-captcha");
 
           if (hCaptcha) {
@@ -123,55 +140,22 @@ export class InflowPortal extends InflowCore {
             hCaptcha.addEventListener(
               "verified",
               (evt1) => {
-                const verificationInput = form.querySelector<HTMLInputElement>(
-                  'input[name="verification"]'
-                );
-                if (verificationInput) {
-                  verificationInput.value = JSON.stringify({
+                data.set(
+                  "verification",
+                  JSON.stringify({
                     type: "hcaptcha",
                     token: (evt1 as Event & { token: string }).token,
-                  });
-
-                  form.dispatchEvent(
-                    new SubmitEvent("submit", { submitter: evt.submitter })
-                  );
-                } else {
-                  console.error("Verification input not found in the form.");
-                }
+                  })
+                );
               },
               { once: true }
             );
             hCaptcha.execute();
           } else {
-            console.error("HCaptcha element not found in the form.");
+            throw new Error("HCaptcha element not found in the form.");
           }
         }
-
-        return this.createAction(
-          "sign_up",
-          null,
-          {
-            "data.first_name should NOT be longer than 50 characters":
-              "first_name_too_long",
-            "data.first_name should be string": "first_name_required",
-            "data.last_name should NOT be longer than 50 characters":
-              "last_name_too_long",
-            "data.last_name should be string": "last_name_required",
-            "data.email should NOT be longer than 100 characters":
-              "email_too_long",
-            'data.email should match format "email"': "email_invalid",
-            "data.email should be string": "email_required",
-            "data.password should NOT be longer than 50 characters":
-              "password_too_long",
-            "data.password should be string": "password_required",
-          },
-          ["verification"],
-          (data) => {
-            this.#setSession(data);
-            location.href = config.homePageUrl;
-          }
-        )(evt);
-      },
+      ),
 
       v8n: {
         signIn: {

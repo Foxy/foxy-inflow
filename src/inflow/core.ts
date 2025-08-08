@@ -12,6 +12,7 @@ import { AttrDirective } from "./directives/attr";
 import { BAttrDirective } from "./directives/battr";
 import { OnDirective } from "./directives/on";
 import { V8NDirective } from "./directives/v8n";
+import { ActionDirective } from "./directives/action";
 
 export type InflowCoreConfig = {
   onTokenExpiry?: () => void;
@@ -19,12 +20,16 @@ export type InflowCoreConfig = {
   prefix?: string;
   base?: string;
   root?: ChildNode;
+  directives?: Directive[];
+  directiveAliases?: Record<string, string>;
 };
 
 export class InflowCore {
   #beforeUpdateHandlers: (() => void)[] = [];
 
   #sourceDirective: SourceDirective;
+
+  #actionDirective: ActionDirective;
 
   #functionCache = new LRUCache<string, Function>({ max: 1000 });
 
@@ -34,11 +39,11 @@ export class InflowCore {
 
   #root: ChildNode;
 
-  directiveAliases: Record<string, string> = {};
+  #directiveAliases: Record<string, string> = {};
 
   globalContext: Record<string, unknown> = {};
 
-  directives: Directive[] = [];
+  #directives: Directive[] = [];
 
   storage = localStorage; // TODO scoped local storage
 
@@ -62,10 +67,16 @@ export class InflowCore {
       onTokenExpiry: config?.onTokenExpiry,
     });
 
-    this.directives.push(
+    this.#actionDirective = new ActionDirective({
+      prefix: "action",
+      inflow: this,
+    });
+
+    this.#directives.push(
       new CloakDirective({ prefix: "cloak", inflow: this }),
       new RefDirective({ prefix: "ref", inflow: this }),
       this.#sourceDirective,
+      this.#actionDirective,
       new IfDirective({ prefix: "if", inflow: this }),
       new IfNotDirective({ prefix: "if-not", inflow: this }),
       new ForDirective({ prefix: "for", inflow: this }),
@@ -73,19 +84,29 @@ export class InflowCore {
       new AttrDirective({ prefix: "attr-", inflow: this }),
       new BAttrDirective({ prefix: "battr-", inflow: this }),
       new OnDirective({ prefix: "on-", inflow: this }),
-      new V8NDirective({ prefix: "v8n", inflow: this })
+      new V8NDirective({ prefix: "v8n", inflow: this }),
+      ...(config?.directives ?? [])
     );
 
-    this.directiveAliases["text"] = "prop-textcontent";
-    this.directiveAliases["value"] = "attr-value";
-    this.directiveAliases["href"] = "attr-href";
-    this.directiveAliases["disabled"] = "battr-disabled";
-    this.directiveAliases["readonly"] = "battr-readonly";
-    this.directiveAliases["hidden"] = "battr-hidden";
-    this.directiveAliases["checked"] = "battr-checked";
-    this.directiveAliases["selected"] = "battr-selected";
-    this.directiveAliases["required"] = "battr-required";
-    this.directiveAliases["open"] = "battr-open";
+    this.#directiveAliases["text"] = "prop-textcontent";
+    this.#directiveAliases["value"] = "attr-value";
+    this.#directiveAliases["href"] = "attr-href";
+    this.#directiveAliases["disabled"] = "battr-disabled";
+    this.#directiveAliases["readonly"] = "battr-readonly";
+    this.#directiveAliases["hidden"] = "battr-hidden";
+    this.#directiveAliases["checked"] = "battr-checked";
+    this.#directiveAliases["selected"] = "battr-selected";
+    this.#directiveAliases["required"] = "battr-required";
+    this.#directiveAliases["open"] = "battr-open";
+
+    Object.entries(config?.directiveAliases ?? {}).forEach(([key, value]) => {
+      if (this.#directiveAliases[key]) {
+        console.warn(
+          `Overriding existing directive alias for "${key}" with "${value}".`
+        );
+      }
+      this.#directiveAliases[key] = value;
+    });
 
     this.globalContext.format = {
       currency: (value: string, lang = navigator.language) => {
@@ -115,100 +136,16 @@ export class InflowCore {
     bearerToken: string | null,
     messageToCode: Record<string, string>,
     jsonFields?: string[],
-    onSuccess?: (response: any) => void
+    onSuccess?: (response: any) => void,
+    onSubmit?: (form: HTMLFormElement, data: FormData) => Promise<void>
   ) {
-    let state: "idle" | "busy" | "fail" | "done" = "idle";
-    let errors: { code: string; message: string }[] = [];
-
-    return new Proxy(
-      (evt: SubmitEvent) => {
-        evt.preventDefault();
-        if (state === "busy") return;
-
-        const form = evt.currentTarget as HTMLFormElement;
-        if (!form.checkValidity()) return;
-
-        const formData = new FormData(form);
-
-        state = "busy";
-        errors = [];
-        this.requestUpdate();
-
-        const body = Object.fromEntries(formData);
-
-        jsonFields?.forEach((field) => {
-          const value = formData.get(field);
-          if (value) {
-            try {
-              body[field] = JSON.parse(value as string);
-            } catch (e) {
-              console.error(`Failed to parse JSON for field ${field}:`, e);
-            }
-          }
-        });
-
-        fetch(`${this.base}${path}`, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "foxy-api-version": "1",
-            ...(bearerToken ? { authorization: `Bearer ${bearerToken}` } : {}),
-          },
-          body: JSON.stringify(body),
-        })
-          .then((response) =>
-            response.ok ? response.json() : Promise.reject(response)
-          )
-          .then((data) => {
-            state = "done";
-            this.requestUpdate();
-            onSuccess?.(data);
-          })
-          .catch((err) => {
-            state = "fail";
-            errors = [{ code: "unknown_error", message: String(err) }];
-
-            if (err instanceof Response) {
-              err.json().then((data) => {
-                if (data._embedded?.["fx:errors"]) {
-                  errors = data._embedded?.["fx:errors"].map(
-                    (error: { message: string }) => {
-                      const message = error.message;
-                      return {
-                        code: messageToCode[message] || "unknown_error",
-                        message,
-                      };
-                    }
-                  );
-                } else {
-                }
-                this.requestUpdate();
-              });
-            } else {
-              this.requestUpdate();
-              console.error(err);
-            }
-          });
-      },
-      {
-        get: (target, key) => {
-          if (key === "isSubmitting") return state === "busy";
-          if (key === "isFailed") return state === "fail";
-          if (key === "isIdle") return state === "idle";
-          if (key === "isDone") return state === "done";
-          if (key === "errors") return errors;
-          if (key === "reset")
-            return () => {
-              if (state === "fail") {
-                state = "idle";
-                errors = [];
-                this.requestUpdate();
-              }
-            };
-
-          return Reflect.get(target, key);
-        },
-      }
+    return this.#actionDirective.createAction(
+      path,
+      bearerToken,
+      messageToCode,
+      jsonFields,
+      onSuccess,
+      onSubmit
     );
   }
 
@@ -229,12 +166,13 @@ export class InflowCore {
     const lang = _lang ?? this.#getLang(node);
 
     if (node instanceof Element) {
-      for (const directive of this.directives) {
+      for (const directive of this.#directives) {
         const attribute = Array.from(node.attributes).find(({ name: key }) => {
           if (!key.startsWith(this.#prefix)) return false;
 
           const strippedKey = key.substring(this.#prefix.length);
-          const resolvedKey = this.directiveAliases[strippedKey] ?? strippedKey;
+          const resolvedKey =
+            this.#directiveAliases[strippedKey] ?? strippedKey;
 
           return directive.prefix.endsWith("-")
             ? resolvedKey.startsWith(directive.prefix)
@@ -249,7 +187,7 @@ export class InflowCore {
 
           const strippedName = attribute.name.substring(this.#prefix.length);
           const resolvedName =
-            this.directiveAliases[strippedName] ?? strippedName;
+            this.#directiveAliases[strippedName] ?? strippedName;
 
           const result = directive.apply({
             isStashed,
