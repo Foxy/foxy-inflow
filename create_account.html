@@ -20,6 +20,15 @@
       <div data-if="portal.data.settings.isReady">
         <p data-if="portal.isLoggedIn()">You are already logged in. <a href="/">Please visit your portal here.</a></p>
 
+        <!--
+        
+        Progress so far for future Dan: you stopped at v8n improvements. Action forms are updated,
+        but forms like address/customer profile are not – do that next. Then you had an idea to fuse
+        together data-v8n and data-action attributes into a single one like data-form="portal.createAccount"
+        because those are generally used together anyway. Lots of cleanup and refactoring remains.
+
+        -->
+
         <form data-if-not="portal.isLoggedIn()" data-v8n="portal.v8n.createAccount" data-action="portal.createAccount">
           <label>First name:<br /><input name="first_name" /></label>
           <label>Last name:<br /><input name="last_name" /></label>
