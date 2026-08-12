@@ -108,7 +108,6 @@ export class SourceDirective extends Directive {
       let refreshStaleBackground = false;
 
       if (this.#staleSources.has(source)) {
-        console.log("using stale source", source, reference);
         refreshStaleBackground = true;
         this.#staleSources.delete(source);
       }
@@ -172,7 +171,6 @@ export class SourceDirective extends Directive {
             if (!form.reportValidity()) return;
 
             const formData = new FormData(form);
-            console.log("patching");
 
             fetch(source, {
               method: "PATCH",
@@ -184,9 +182,7 @@ export class SourceDirective extends Directive {
               body: JSON.stringify(Object.fromEntries(formData)),
             })
               .then((response) => response.json())
-              .then((data) => {
-                console.log(data);
-                console.log("refreshing after patch", source, reference);
+              .then(() => {
                 this.#staleSources.add(source);
                 this.#loadSource.cache.delete(source);
                 update();
@@ -194,7 +190,6 @@ export class SourceDirective extends Directive {
           },
 
           refresh: () => {
-            console.log("refreshing", source, reference);
             this.#staleSources.add(source);
             this.#loadSource.cache.delete(source);
             update();
@@ -203,10 +198,7 @@ export class SourceDirective extends Directive {
       }
 
       if (!this.#sources.has(source) || refreshStaleBackground) {
-        if (refreshStaleBackground) {
-          console.log("refreshing stale source", source, reference);
-        } else {
-          console.log("loading source", source, reference);
+        if (!refreshStaleBackground) {
           context[reference] = {
             hasFailedToLoad: false,
             isLoading: true,
@@ -231,7 +223,7 @@ export class SourceDirective extends Directive {
         isLoading: false,
         isReady: false,
         refresh: () => {
-          console.error("Refreshing is not suppored in implicit sources.");
+          console.error("Refreshing is not supported in implicit sources.");
         },
       };
     }
@@ -240,7 +232,6 @@ export class SourceDirective extends Directive {
     let contextEntry: Record<string, unknown>;
 
     if (this.#staleSources.has(source)) {
-      console.log("using stale source (implicit)", source);
       refreshStaleBackground = true;
       this.#staleSources.delete(source);
     }
@@ -304,7 +295,6 @@ export class SourceDirective extends Directive {
           if (!form.reportValidity()) return;
 
           const formData = new FormData(form);
-          console.log("patching");
 
           fetch(source, {
             method: "PATCH",
@@ -316,9 +306,7 @@ export class SourceDirective extends Directive {
             body: JSON.stringify(Object.fromEntries(formData)),
           })
             .then((response) => response.json())
-            .then((data) => {
-              console.log(data);
-              console.log("refreshing after patch (implicit)", source);
+            .then(() => {
               this.#staleSources.add(source);
               this.#loadSource.cache.delete(source);
               this.inflow.requestUpdate();
@@ -326,12 +314,11 @@ export class SourceDirective extends Directive {
         },
 
         refresh: () => {
-          console.error("Refreshing is not suppored in implicit sources.");
+          console.error("Refreshing is not supported in implicit sources.");
         },
       };
 
       if (refreshStaleBackground) {
-        console.log("refreshing stale source (implicit)", source);
         this.#loadSource(
           source,
           this.#getToken ?? void 0,
@@ -339,13 +326,12 @@ export class SourceDirective extends Directive {
         ).then(() => this.inflow.requestUpdate());
       }
     } else {
-      console.log("loading source (implicit)", source);
       contextEntry = {
         hasFailedToLoad: false,
         isLoading: true,
         isReady: false,
         refresh: () => {
-          console.error("Refreshing is not suppored in implicit sources.");
+          console.error("Refreshing is not supported in implicit sources.");
         },
       };
 
