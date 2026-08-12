@@ -40,9 +40,11 @@ Directive values are JavaScript evaluated against a sandboxed context (`#createC
 
 Validation messages for actions live in `InflowPortal.defaultTranslations`, keyed `<action>.<field>.<zod_error_code>` (e.g. `sign_in.email.invalid`). A `data-v8n` field with no matching key renders nothing, so add the key when you add the field.
 
-## Storage Is Not Scoped Yet
+## Storage Is Scoped Per Store
 
-`InflowCore.storage` is `localStorage` directly (`core.ts`, marked TODO). Two stores served from the same domain share portal session state. Keep it in mind before adding anything else to storage.
+`InflowCore.storage` is a `ScopedStorage` (`src/inflow/ScopedStorage.ts`) over `localStorage`, namespaced by `config.base`, so keys read `inflow:<base>:<key>`. Use `this.storage` rather than `localStorage` directly — `portal.ts` used to write the session token straight to `localStorage`, which put two stores on one domain in the same session slot. `storage.clear()` only removes this store's keys.
+
+Cookie mode (`storage: "cookie"`) is deliberately unscoped: `fx.customer` is a fixed name other Foxy code reads.
 
 ## Don't Ship Debug Logging
 
