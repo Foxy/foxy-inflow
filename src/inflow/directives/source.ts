@@ -15,7 +15,7 @@ export type SourceDirectiveConfig = {
 };
 
 export class SourceDirective extends Directive {
-  #rawCachedSources = this.inflow.storage.getItem("inflow:cachedSources");
+  #rawCachedSources = this.inflow.storage.getItem("cachedSources");
 
   #cachedSources: [string, any][] = this.#rawCachedSources
     ? JSON.parse(this.#rawCachedSources)
@@ -51,7 +51,7 @@ export class SourceDirective extends Directive {
         this.#sources.set(source, await response.json());
 
         this.inflow.storage.setItem(
-          "inflow:cachedSources",
+          "cachedSources",
           JSON.stringify(Array.from(this.#sources.entries()))
         );
 
@@ -63,7 +63,7 @@ export class SourceDirective extends Directive {
       }
 
       if (response?.status === 401) {
-        this.inflow.storage.removeItem("inflow:cachedSources");
+        this.inflow.storage.removeItem("cachedSources");
         this.#staleSources.clear();
         this.#sources.clear();
         onTokenExpiry?.();

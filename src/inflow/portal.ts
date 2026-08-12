@@ -372,15 +372,18 @@ export class InflowPortal extends InflowCore {
     if (this.#storage === "cookie") {
       document.cookie = "fx.customer=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     } else {
-      localStorage.removeItem("session");
+      this.storage.removeItem("session");
     }
   }
 
   #setSession(session: Record<string, string>) {
     if (this.#storage === "cookie") {
+      // `fx.customer` is a fixed name other Foxy code reads, so cookie mode is
+      // deliberately not namespaced — sharing it across the domain is the point
+      // of this mode.
       document.cookie = `fx.customer=${encodeURIComponent(session.token)}; path=/`;
     } else {
-      localStorage.setItem("session", JSON.stringify(session));
+      this.storage.setItem("session", JSON.stringify(session));
     }
   }
 
@@ -391,7 +394,7 @@ export class InflowPortal extends InflowCore {
     }
 
     try {
-      const session = localStorage.getItem("session") as string;
+      const session = this.storage.getItem("session") as string;
       return JSON.parse(session)?.session_token ?? null;
     } catch {
       return null;

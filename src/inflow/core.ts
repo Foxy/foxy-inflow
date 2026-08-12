@@ -1,6 +1,7 @@
 import { LRUCache } from "lru-cache";
 import { debounce } from "lodash-es";
 import { Directive } from "./Directive";
+import { ScopedStorage } from "./ScopedStorage";
 import { CloakDirective } from "./directives/cloak";
 import { RefDirective } from "./directives/ref";
 import { SourceDirective } from "./directives/source";
@@ -47,7 +48,7 @@ export class InflowCore {
 
   #directives: Directive[] = [];
 
-  storage = localStorage; // TODO scoped local storage
+  storage: Storage;
 
   createAction: ActionDirective["createAction"];
 
@@ -67,6 +68,10 @@ export class InflowCore {
     this.#prefix = config?.prefix ?? "data-";
     this.#root = config?.root ?? document.body;
     this.base = config?.base ?? "";
+
+    // Must be assigned before the directives are constructed: SourceDirective
+    // reads inflow.storage in a field initializer.
+    this.storage = new ScopedStorage(this.base);
 
     this.#sourceDirective = new SourceDirective({
       prefix: "source",
