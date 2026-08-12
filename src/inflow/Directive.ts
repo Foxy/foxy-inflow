@@ -12,7 +12,7 @@ export class Directive {
     this.inflow = inflow;
   }
 
-  apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
+  apply(_params: DirectiveRendererParams): DirectiveRendererResult | void {
     // This method should be overridden by subclasses
     console.warn("render method not implemented in Directive subclass");
   }
