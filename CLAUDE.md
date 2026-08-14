@@ -53,3 +53,5 @@ Cookie mode (`storage: "cookie"`) is deliberately unscoped: `fx.customer` is a f
 ## Docs
 
 `README.md` (316 lines) is the documentation. Keep its snippets runnable, and use a placeholder store domain — a personal dev store has ended up in the copy-paste quickstart before.
+
+The format is settled: README plus the demo pages in the repo root, **no Storybook**. Inflow ships directives, not components, so there is nothing to mount per story; the demo pages served by `npm run dev` are the runnable examples. Extend those rather than adding a second docs tool.
