@@ -209,6 +209,6 @@ Split the bindings across nested elements, or attach the extra listener yourself
 
 ## Values are code
 
-Every directive value is compiled into a function and evaluated against the context. Compiled functions are cached.
+Every directive value is compiled into a function and evaluated against the context. Compiled functions are cached, keyed by the expression text, in an LRU cache holding 1000 entries — so repeating the same expression across many elements costs one compile, while generating a large number of distinct expressions will evict older ones.
 
 This means directive values are executable code. **Never build a directive value out of user input or API data.** Bind data through the context and let the expression read it, rather than interpolating a value into the attribute.

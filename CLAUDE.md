@@ -52,6 +52,8 @@ Cookie mode (`storage: "cookie"`) is deliberately unscoped: `fx.customer` is a f
 
 ## Docs
 
-`README.md` (316 lines) is the documentation. Keep its snippets runnable, and use a placeholder store domain — a personal dev store has ended up in the copy-paste quickstart before.
+Documentation lives in `docs/`, one Markdown page per task, indexed by `docs/README.md`. `README.md` is an overview and index only — put substance in `docs/`, not there. Keep snippets runnable, and use a placeholder store domain: a personal dev store has ended up in the copy-paste quickstart before.
 
-The format is settled: README plus the demo pages in the repo root, **no Storybook**. Inflow ships directives, not components, so there is nothing to mount per story; the demo pages served by `npm run dev` are the runnable examples. Extend those rather than adding a second docs tool.
+The format is settled: Markdown in `docs/`, **no Storybook**. Inflow ships directives, not components, so there is nothing to mount per story; the demo pages in the repo root remain the runnable examples. Extend those rather than adding a second docs tool.
+
+The CDN bundle URL in the docs is **not published yet**, and it appears in more than one file — `grep -rn "cdn-js.foxy.io/inflow"` before changing it, and update every hit. `docs/getting-started.md` is the page that explains its status; the others just use it in a snippet.
