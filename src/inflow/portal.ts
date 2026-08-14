@@ -377,11 +377,24 @@ export class InflowPortal extends InflowCore {
   }
 
   #setSession(session: Record<string, string>) {
+    const token = session?.session_token;
+
+    // The authenticate response identifies the session with `session_token`.
+    // Cookie mode used to write `session.token`, which does not exist on that
+    // response, so the cookie held the string "undefined" — truthy, and sent as
+    // a bearer credential on every request. Refuse to store a session we cannot
+    // authenticate with rather than leaving a value that reads as signed in.
+    if (typeof token !== "string" || !token) {
+      console.error("Sign-in response did not include a session token.");
+      this.#removeToken();
+      return;
+    }
+
     if (this.#storage === "cookie") {
       // `fx.customer` is a fixed name other Foxy code reads, so cookie mode is
       // deliberately not namespaced — sharing it across the domain is the point
       // of this mode.
-      document.cookie = `fx.customer=${encodeURIComponent(session.token)}; path=/`;
+      document.cookie = `fx.customer=${encodeURIComponent(token)}; path=/`;
     } else {
       this.storage.setItem("session", JSON.stringify(session));
     }
@@ -390,7 +403,13 @@ export class InflowPortal extends InflowCore {
   #getToken() {
     if (this.#storage === "cookie") {
       const match = document.cookie.match(/fx\.customer=([^;]+)/);
-      return match ? decodeURIComponent(match[1]) : null;
+      if (!match) return null;
+
+      // Sessions written before the `session_token` fix left the string
+      // "undefined" in this cookie. It is non-empty, so it would otherwise read
+      // as a valid session for anyone still carrying one.
+      const token = decodeURIComponent(match[1]);
+      return token && token !== "undefined" ? token : null;
     }
 
     try {
