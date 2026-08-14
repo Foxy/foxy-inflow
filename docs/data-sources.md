@@ -77,7 +77,7 @@ Implicit reads are convenient for one or two values. They come with one real lim
 
 > **Implicit sources cannot paginate or refresh.** Calling `refresh`, `loadFirstPage`, `loadPreviousPage`, `loadNextPage` or `loadLastPage` on an implicitly read source does nothing but log an error to the console. Both need `data-source`.
 
-So: single values, implicit. Lists, forms, anything with paging or a save — use `data-source`.
+`patch` is unaffected and works either way. So: single values, implicit; anything that pages or refreshes, `data-source`. Forms are usually easier with an explicit source anyway, because the markup gets a short local name to call `patch` on.
 
 ## The state object
 
