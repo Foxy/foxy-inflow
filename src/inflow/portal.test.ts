@@ -188,3 +188,231 @@ describe("InflowPortal bundled validators", () => {
     expect(offenders).toEqual([]);
   });
 });
+
+// jsdom refuses to navigate between documents, so a real `location.href = ...`
+// is a silent no-op there and the destination cannot be read back afterwards.
+// Replacing `location` for the duration of a test records what the portal
+// actually assigned, which is the whole of the behaviour under test here.
+function captureNavigation(url: string) {
+  const original = window.location;
+  const parsed = new URL(url);
+  const assigned: string[] = [];
+
+  const stub = {
+    get href() {
+      return parsed.href;
+    },
+    set href(value: string) {
+      assigned.push(value);
+    },
+    assign: (value: string) => void assigned.push(value),
+    replace: (value: string) => void assigned.push(value),
+    reload: () => void 0,
+    toString: () => parsed.href,
+    origin: parsed.origin,
+    protocol: parsed.protocol,
+    host: parsed.host,
+    hostname: parsed.hostname,
+    port: parsed.port,
+    pathname: parsed.pathname,
+    search: parsed.search,
+    hash: parsed.hash,
+  };
+
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    writable: true,
+    value: stub,
+  });
+
+  return {
+    assigned,
+    restore() {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        writable: true,
+        value: original,
+      });
+    },
+  };
+}
+
+// Submits any portal action through the action directive with only the network
+// stubbed, so attribute discovery, validation and the success handler all run.
+async function submitAction(
+  instance: InflowPortal,
+  action: string,
+  fields: Record<string, string>,
+  response: Record<string, unknown>,
+  options: { captcha?: boolean } = {}
+) {
+  const inputs = Object.entries(fields)
+    .map(([name, value]) => `<input name="${name}" value="${value}" />`)
+    .join("");
+
+  // `createAccount` rejects before it ever fetches when the form has no
+  // `<h-captcha>`, so the element has to be there for the success handler to
+  // run at all. jsdom has no custom elements, so the two methods the portal
+  // calls are attached to a plain element by hand.
+  const captcha = options.captcha ? "<h-captcha></h-captcha>" : "";
+
+  document.body.innerHTML = `<form data-action="portal.${action}">${inputs}${captcha}</form>`;
+  instance.render();
+
+  if (options.captcha) {
+    type HCaptchaStub = HTMLElement & { clear: () => void; execute: () => void };
+    const element = document.querySelector<HCaptchaStub>("h-captcha")!;
+    element.clear = () => void 0;
+    element.execute = () => {
+      element.dispatchEvent(Object.assign(new Event("verified"), { token: "captcha-token" }));
+    };
+  }
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () =>
+    ({ ok: true, json: async () => response }) as unknown as Response;
+
+  try {
+    document.querySelector("form")!.dispatchEvent(new SubmitEvent("submit"));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
+// Loads a source that comes back 401, which is the path that decides an
+// anonymous or expired visitor has to be sent to the sign-in page.
+async function loadUnauthorizedSource(instance: InflowPortal) {
+  const onError = vi.spyOn(console, "error").mockImplementation(() => void 0);
+  const originalFetch = globalThis.fetch;
+
+  globalThis.fetch = async () =>
+    ({ ok: false, status: 401, json: async () => ({}) }) as unknown as Response;
+
+  try {
+    document.body.innerHTML = `<div data-source="portal.data.customer"></div>`;
+    instance.render();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  } finally {
+    globalThis.fetch = originalFetch;
+    onError.mockRestore();
+  }
+}
+
+const SESSION = { session_token: "token-a", expires_in: 3600, jwt: "jwt-a" };
+
+const NEW_ACCOUNT = {
+  first_name: "Ada",
+  last_name: "Lovelace",
+  email: "customer@example.com",
+  password: "secret",
+};
+
+// Foxy Logic could send a customer back to the page they were on before they
+// were asked to sign in. Inflow used to land everyone on `homePageUrl`, and the
+// README documented a `portalPageUrl` key that never existed (FX-241).
+describe("InflowPortal return-after-login", () => {
+  afterEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = "";
+  });
+
+  it("sends the customer to the page they asked for", async () => {
+    const nav = captureNavigation("http://localhost:3000/sign_in.html?redirect=%2Faccount");
+
+    try {
+      await submitAction(
+        portal(BASE_A),
+        "signIn",
+        { email: "customer@example.com", password: "secret" },
+        SESSION
+      );
+
+      expect(nav.assigned).toEqual(["http://localhost:3000/account"]);
+    } finally {
+      nav.restore();
+    }
+  });
+
+  it("sends a new account to the page they asked for", async () => {
+    const nav = captureNavigation("http://localhost:3000/sign_in.html?redirect=%2Faccount");
+
+    try {
+      await submitAction(portal(BASE_A), "createAccount", NEW_ACCOUNT, SESSION, {
+        captcha: true,
+      });
+
+      expect(nav.assigned).toEqual(["http://localhost:3000/account"]);
+    } finally {
+      nav.restore();
+    }
+  });
+
+  // An unchecked `redirect` parameter makes the sign-in page an open redirect:
+  // a link to the store's own sign-in form lands the customer somewhere else
+  // entirely, with the store's domain in the address bar up to that point.
+  it("falls back to the home page for an off-origin redirect", async () => {
+    const nav = captureNavigation(
+      "http://localhost:3000/sign_in.html?redirect=https%3A%2F%2Fevil.example.com"
+    );
+
+    try {
+      await submitAction(
+        portal(BASE_A),
+        "signIn",
+        { email: "customer@example.com", password: "secret" },
+        SESSION
+      );
+
+      expect(nav.assigned).toEqual(["/index.html"]);
+    } finally {
+      nav.restore();
+    }
+  });
+
+  it("falls back to the home page when no redirect was asked for", async () => {
+    const nav = captureNavigation("http://localhost:3000/sign_in.html");
+
+    try {
+      await submitAction(
+        portal(BASE_A),
+        "signIn",
+        { email: "customer@example.com", password: "secret" },
+        SESSION
+      );
+
+      expect(nav.assigned).toEqual(["/index.html"]);
+    } finally {
+      nav.restore();
+    }
+  });
+
+  it("records the page the customer wanted when the session is rejected", async () => {
+    const nav = captureNavigation("http://localhost:3000/account");
+
+    try {
+      await loadUnauthorizedSource(portal(BASE_A));
+
+      expect(nav.assigned).toEqual([
+        "http://localhost:3000/sign_in.html?redirect=http%3A%2F%2Flocalhost%3A3000%2Faccount",
+      ]);
+    } finally {
+      nav.restore();
+    }
+  });
+
+  // The loop guard used to compare the whole of `location.href` against the
+  // sign-in URL. Once that URL carries `?redirect=...` the two never match, so
+  // a second rejection re-captures the sign-in page into its own parameter.
+  it("does not capture the sign-in page into its own redirect parameter", async () => {
+    const nav = captureNavigation("http://localhost:3000/sign_in.html?redirect=%2Faccount");
+
+    try {
+      await loadUnauthorizedSource(portal(BASE_A));
+
+      expect(nav.assigned).toEqual([]);
+    } finally {
+      nav.restore();
+    }
+  });
+});

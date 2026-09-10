@@ -28,7 +28,7 @@ Construct `Portal` once per page. It reads the document, applies every directive
 |---|---|
 | `base` | Your store's Customer API root. It always ends in `/s/customer/`. Every data source builds its URL from this, and it also namespaces the session in browser storage. |
 | `signInPageUrl` | The page to send a visitor to when they have no valid session. Inflow redirects here by itself when the API rejects a token. |
-| `homePageUrl` | The page to land on after a successful sign-in or account creation. |
+| `homePageUrl` | Where to land after a successful sign-in or account creation, when there is no page to return to. A visitor sent to the sign-in page by Inflow returns to the page they wanted instead. |
 
 Replace `your-store` with your own store's subdomain.
 

@@ -50,7 +50,7 @@ Four things are happening.
 
 `data-v8n="portal.v8n.signIn"` validates the fields as the customer types. It matches validators to inputs by `name`, which is why the inputs are named `email` and `password`.
 
-`data-action="portal.signIn"` submits. On success Inflow stores the session and redirects to your `homePageUrl` — you do not write that redirect.
+`data-action="portal.signIn"` submits. On success Inflow stores the session and redirects — back to the page the customer was trying to reach, or to your `homePageUrl` when there is none. You do not write that redirect. See [Returning after sign-in](configuration.md#returning-after-sign-in).
 
 The button label reads `portal.signIn.isSubmitting`, and the error list loops over `portal.signIn.errors`. Both come from the action itself.
 
@@ -80,7 +80,7 @@ A page that requires a session gates on readiness rather than checking permissio
 </div>
 ```
 
-Reading `portal.data.customer` starts the request. If the visitor has no valid session the API rejects it, and Inflow clears the cache and redirects to your `signInPageUrl`. **Loading the source is the guard.**
+Reading `portal.data.customer` starts the request. If the visitor has no valid session the API rejects it, and Inflow clears the cache and redirects to your `signInPageUrl`, adding this page as a `redirect` parameter so signing in brings them back here. **Loading the source is the guard.**
 
 `portal.isLoggedIn()` is for rendering decisions only — it reports that a token exists, not that it is still valid. Do not treat it as a security boundary.
 

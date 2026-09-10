@@ -1,4 +1,5 @@
 import { InflowCore } from "./core";
+import { resolveRedirect } from "./resolveRedirect";
 import { z } from "zod";
 
 export type InflowPortalConfig = {
@@ -43,8 +44,18 @@ export class InflowPortal extends InflowCore {
       getToken: () => this.#getToken(),
       onTokenExpiry: () => {
         this.#removeToken();
-        const redirectTo = new URL(config.signInPageUrl, location.origin).toString();
-        if (location.href !== redirectTo) location.href = config.signInPageUrl;
+
+        // Comparing the whole href would stop matching as soon as the sign-in
+        // URL carries `?redirect=...`, so a second rejection would capture the
+        // sign-in page into its own parameter and nest them.
+        const signInPage = new URL(config.signInPageUrl, location.href);
+        const isOnSignInPage =
+          signInPage.origin === location.origin && signInPage.pathname === location.pathname;
+
+        if (isOnSignInPage) return;
+
+        signInPage.searchParams.set("redirect", location.href);
+        location.href = signInPage.toString();
       },
     });
 
@@ -54,6 +65,17 @@ export class InflowPortal extends InflowCore {
       ...InflowPortal.defaultTranslations,
       ...config.v8nTranslations,
     };
+
+    // Where a customer lands once they are signed in: the page they were
+    // trying to reach when the guard sent them here, or `homePageUrl` when
+    // there is no usable `redirect` parameter. See `resolveRedirect` for what
+    // counts as usable.
+    const destinationAfterSignIn = () =>
+      resolveRedirect({
+        candidate: new URLSearchParams(location.search).get("redirect"),
+        fallbackUrl: config.homePageUrl,
+        signInPageUrl: config.signInPageUrl,
+      });
 
     this.globalContext.portal = {
       isLoggedIn: () => !!this.#getToken(),
@@ -75,7 +97,7 @@ export class InflowPortal extends InflowCore {
         },
         onSuccess: (data) => {
           this.#setSession(data);
-          location.href = config.homePageUrl;
+          location.href = destinationAfterSignIn();
         },
       }),
 
@@ -135,7 +157,7 @@ export class InflowPortal extends InflowCore {
         jsonFields: ["verification"],
         onSuccess: (data) => {
           this.#setSession(data);
-          location.href = config.homePageUrl;
+          location.href = destinationAfterSignIn();
         },
         onSubmit: async (form, data) => {
           type HCaptchaElement = HTMLElement & {
