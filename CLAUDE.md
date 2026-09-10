@@ -20,7 +20,7 @@ Two public exports (`src/inflow/index.ts`): `Core` (`InflowCore`) and `Portal` (
 
 ### Repeating a directive on one element
 
-`render()` collects **every** matching attribute per directive (`Array.from(node.attributes).filter(...)`) and applies them in document order. So an element can carry several `data-attr-*`, `data-prop-*`, `data-battr-*` or `data-on-*` bindings at once. This is safe because the prefix directives are exactly the ones that only read and write the host; the directives that stash the node or skip its children match exactly (`if`, `for`, `v8n`, ...) and cannot appear twice on one element. Keep that split if you add a directive: a prefix directive must not return `isStashed` or `skipChildren`.
+`render()` collects **every** matching attribute per prefix directive and applies them in document order, so an element can carry several `data-attr-*`, `data-prop-*`, `data-battr-*` or `data-on-*` bindings. Exact-match directives are capped at one attribute because the loop hands them stash state it reads only once — a prefix directive must therefore never return `isStashed` or `skipChildren`.
 
 ## Testing
 

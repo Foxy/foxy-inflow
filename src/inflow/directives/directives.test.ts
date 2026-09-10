@@ -18,6 +18,7 @@ function mount(html: string) {
 
 describe("render pipeline", () => {
   afterEach(() => {
+    vi.useRealTimers();
     document.body.innerHTML = "";
   });
 
@@ -113,6 +114,34 @@ describe("render pipeline", () => {
 
     expect(onInput).toHaveBeenCalledTimes(1);
     expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
+  // `on-` is the only prefix directive that returns a handler: it removes its
+  // listener in `beforeUpdate` and re-adds it on the next pass. Two of them on
+  // one element means two removals — one short and the surviving handler fires
+  // once per completed update cycle instead of once per event.
+  it("rebinds every data-on-* exactly once across an update cycle", () => {
+    vi.useFakeTimers();
+
+    const inflow = mount(`<input data-on-input="onInput" data-on-blur="onBlur" />`);
+    const onInput = vi.fn();
+    const onBlur = vi.fn();
+
+    inflow.globalContext.onInput = onInput;
+    inflow.globalContext.onBlur = onBlur;
+    inflow.render();
+
+    inflow.requestUpdate();
+    vi.advanceTimersByTime(250);
+
+    const input = document.querySelector("input");
+    input?.dispatchEvent(new Event("input"));
+    input?.dispatchEvent(new Event("blur"));
+
+    expect(onInput).toHaveBeenCalledTimes(1);
+    expect(onBlur).toHaveBeenCalledTimes(1);
+
+    vi.useRealTimers();
   });
 
   it("toggles boolean attributes on truthiness, not on value", () => {
