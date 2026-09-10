@@ -78,6 +78,27 @@ describe("data-v8n", () => {
     expect(input.validationMessage).toBe("");
   });
 
+  // The all-fields pass runs on every update now, and it writes to each input
+  // through `setCustomValidity`. If that write — or the `data-value` write in
+  // the same cycle — fed the directive's own input/change listener, `onEvent`
+  // would call `update()` and the page would spin on the debounce interval.
+  it("settles after one pass instead of re-validating in a loop", () => {
+    const validate = vi.fn(() => "Email is invalid.");
+    const inflow = mount(
+      `<form data-v8n="{ email: validate }">` +
+        `<input name="email" data-value="email" />` +
+        `</form>`
+    );
+
+    inflow.globalContext.validate = validate;
+    inflow.globalContext.email = "not-an-email";
+
+    inflow.requestUpdate();
+    vi.runAllTimers();
+
+    expect(validate).toHaveBeenCalledTimes(1);
+  });
+
   it("warns once per host and validates nothing when the host is not a form", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const validate = vi.fn(() => "Email is invalid.");
