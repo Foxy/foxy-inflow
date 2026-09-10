@@ -198,7 +198,7 @@ The `novalidate` attribute turns off the browser's own bubbles while leaving `re
 
 On success the source refetches itself, so the page shows what the API stored rather than what was typed.
 
-`address.html` applies the same pattern to a longer form. Note that it validates per input rather than with a form-level `data-v8n` map; follow step 1's form-level pattern instead, which is the contract the directive implements.
+`address.html` applies the same pattern to a longer form, with one form-level `data-v8n="portal.v8n.customerAddress"` covering all ten fields.
 
 ## What to read next
 

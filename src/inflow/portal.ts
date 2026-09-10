@@ -273,17 +273,17 @@ export class InflowPortal extends InflowCore {
           },
         },
         customerAddress: {
-          addressName: (value: string) => {
+          address_name: (value: string) => {
             const result = z.string().max(100).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`customer.address_name.${error}`] || error : "";
           },
-          firstName: (value: string) => {
+          first_name: (value: string) => {
             const result = z.string().max(50).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`customer.first_name.${error}`] || error : "";
           },
-          lastName: (value: string) => {
+          last_name: (value: string) => {
             const result = z.string().max(50).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`customer.last_name.${error}`] || error : "";
@@ -313,7 +313,7 @@ export class InflowPortal extends InflowCore {
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`customer.region.${error}`] || error : "";
           },
-          postalCode: (value: string) => {
+          postal_code: (value: string) => {
             const result = z.string().max(50).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`customer.postal_code.${error}`] || error : "";

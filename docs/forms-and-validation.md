@@ -105,16 +105,15 @@ with `myValidators` on the context — see [Extending Inflow](extending.md). Not
 | `customer` | `first_name`, `last_name`, `tax_id`, `email`, `password`, `password_old` |
 | `defaultPaymentMethod` | `ccToken`, `saveCc` |
 | `subscription` | `nextTransactionDate`, `frequency` |
-| `customerAddress` | `addressName`, `firstName`, `lastName`, `company`, `address1`, `address2`, `city`, `region`, `postalCode`, `country`, `phone` |
+| `customerAddress` | `address_name`, `first_name`, `last_name`, `company`, `address1`, `address2`, `city`, `region`, `postal_code`, `country`, `phone` |
 
-Note the naming split, which decides how you use each group. `signIn`, `createAccount` and `customer` use snake_case keys that match input `name` attributes, so you can pass the whole group as the map. `customerAddress`, `defaultPaymentMethod` and `subscription` use camelCase keys, which do not match typical field names — build a map for those:
+Note the naming split, which decides how you use each group. `signIn`, `createAccount`, `customer` and `customerAddress` use snake_case keys that match input `name` attributes, so you can pass the whole group as the map. `defaultPaymentMethod` and `subscription` use camelCase keys, which do not match typical field names — build a map for those:
 
 ```html
 <form data-v8n="{
-  address_name: portal.v8n.customerAddress.addressName,
-  address1: portal.v8n.customerAddress.address1,
-  country: portal.v8n.customerAddress.country
-}" data-action="portal.data.addresses.patch">
+  cc_token: portal.v8n.defaultPaymentMethod.ccToken,
+  save_cc: portal.v8n.defaultPaymentMethod.saveCc
+}" data-action="portal.data.defaultPaymentMethod.patch">
 ```
 
 ## Validation messages
