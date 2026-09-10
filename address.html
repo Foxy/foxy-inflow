@@ -36,6 +36,7 @@
           <form
             data-if="address.isReady"
             data-action="address.patch"
+            data-v8n="portal.v8n.customerAddress"
             novalidate
           >
             <div>
@@ -45,7 +46,6 @@
                 name="first_name"
                 data-value="address.first_name"
                 data-ref="firstName"
-                data-v8n="portal.v8n.customerAddress.firstName"
               />
               <p
                 class="error-message"
@@ -64,7 +64,6 @@
                 name="last_name"
                 data-value="address.last_name"
                 data-ref="lastName"
-                data-v8n="portal.v8n.customerAddress.lastName"
               />
               <p
                 class="error-message"
@@ -83,7 +82,6 @@
                 name="company"
                 data-value="address.company"
                 data-ref="company"
-                data-v8n="portal.v8n.customerAddress.company"
               />
               <p
                 class="error-message"
@@ -102,7 +100,6 @@
                 name="phone"
                 data-value="address.phone"
                 data-ref="phone"
-                data-v8n="portal.v8n.customerAddress.phone"
               />
               <p
                 class="error-message"
@@ -120,7 +117,6 @@
                 name="address1"
                 data-value="address.address1"
                 data-ref="address1"
-                data-v8n="portal.v8n.customerAddress.address1"
                 required
               />
               <p
@@ -145,7 +141,6 @@
                 name="address2"
                 data-value="address.address2"
                 data-ref="address2"
-                data-v8n="portal.v8n.customerAddress.address2"
               />
               <p
                 class="error-message"
@@ -164,9 +159,15 @@
                 name="country"
                 data-value="address.country"
                 data-ref="country"
-                data-v8n="portal.v8n.customerAddress.country"
+                required
               />
 
+              <p
+                class="error-message"
+                data-if="refs.country.validationMessage === 'too_small'"
+              >
+                Please enter a country code.
+              </p>
               <p
                 class="error-message"
                 data-if="refs.country.validationMessage === 'too_big'"
@@ -183,7 +184,6 @@
                 name="region"
                 data-value="address.region"
                 data-ref="region"
-                data-v8n="portal.v8n.customerAddress.region"
               />
 
               <p
@@ -202,7 +202,6 @@
                 name="city"
                 data-value="address.city"
                 data-ref="city"
-                data-v8n="portal.v8n.customerAddress.city"
               />
 
               <p
@@ -221,7 +220,6 @@
                 name="postal_code"
                 data-value="address.postal_code"
                 data-ref="postalCode"
-                data-v8n="portal.v8n.customerAddress.postalCode"
               />
 
               <p

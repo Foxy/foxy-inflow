@@ -168,3 +168,23 @@ describe("InflowPortal default validation messages", () => {
     expect([...new Set(codes)].sort()).toEqual(["invalid_string", "too_big", "too_small"]);
   });
 });
+
+// `data-v8n` matches validators to inputs by the input's `name`, so a key that
+// is not a valid input name is a validator that can never fire. Three groups
+// used camelCase keys and were unusable as form-level maps; this stops that
+// coming back.
+describe("InflowPortal bundled validators", () => {
+  it("keys every group by input name", () => {
+    const api = portal(BASE_A).globalContext.portal as {
+      v8n: Record<string, Record<string, unknown>>;
+    };
+
+    const offenders = Object.entries(api.v8n).flatMap(([group, validators]) =>
+      Object.keys(validators)
+        .filter((field) => !/^[a-z0-9]+(_[a-z0-9]+)*$/.test(field))
+        .map((field) => `${group}.${field}`)
+    );
+
+    expect(offenders).toEqual([]);
+  });
+});

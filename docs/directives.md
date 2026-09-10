@@ -167,7 +167,9 @@ Validates a form's fields.
 
 **It goes on the form, not on an input.** The value is evaluated to a map of field name to validator function, and each input is matched by its `name` attribute. A validator returns an empty string when the value is valid, or a message to show.
 
-Validators run on `input` and `change`, and once over every field after the first render. See [Forms and validation](forms-and-validation.md) for the bundled validators and for supplying your own messages.
+On any other host the directive warns to the console once and does nothing — a single validator on a single input is not a supported shape.
+
+Validators run on `input` and `change`, and over every field after each update. See [Forms and validation](forms-and-validation.md) for the bundled validators and for supplying your own messages.
 
 ## Aliases
 
