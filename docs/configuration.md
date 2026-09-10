@@ -25,12 +25,49 @@ Three options are required. The other five have defaults.
 |---|---|---|---|
 | `base` | string | — **required** | Your store's Customer API root, ending in `/s/customer/`. Every source builds its URL from this, and it namespaces the session in browser storage |
 | `signInPageUrl` | string | — **required** | Where to send a visitor with no valid session |
-| `homePageUrl` | string | — **required** | Where to land after a successful sign-in or account creation |
+| `homePageUrl` | string | — **required** | Where to land after a successful sign-in or account creation, when there is no page to return to — see [Returning after sign-in](#returning-after-sign-in) |
 | `storage` | `"local"` \| `"cookie"` | `"local"` | Where the session token is kept — see [below](#where-the-session-is-stored) |
 | `prefix` | string | `"data-"` | The attribute prefix for every directive. Change it and `data-if` becomes `<your-prefix>if` |
 | `root` | `ChildNode` | `document.body` | The subtree Inflow renders. Scope it to mount a portal inside part of a page |
 | `manualRender` | boolean | `false` | When `true`, skips the initial render — see [Rendering and updates](#rendering-and-updates) |
 | `v8nTranslations` | object | `{}` | Validation messages, merged over the defaults — see [Localization](#localization) |
+
+## Returning after sign-in
+
+A visitor who lands on a protected page without a valid session is sent to your
+`signInPageUrl` carrying the page they wanted:
+
+```
+/sign_in.html?redirect=https%3A%2F%2Fyourstore.example.com%2Faccount
+```
+
+Signing in — or creating an account — sends them on to that page instead of
+`homePageUrl`. You write no markup for this: the guard adds the parameter and
+the actions read it.
+
+`homePageUrl` stays required, because it is the destination whenever there is
+nothing to return to: someone who opened the sign-in page directly, or a
+`redirect` value Inflow will not use.
+
+**Inflow only follows a `redirect` that resolves to the page's own origin.**
+The parameter arrives in a URL, so anyone can send a customer a sign-in link
+carrying any value they like. Another host, a protocol-relative `//host`
+reference, a `javascript:` URL and an unparseable string are all discarded in
+favour of `homePageUrl`, and so is the sign-in page itself, which would
+otherwise loop. Without that check the sign-in page would be an open redirect:
+a link showing your domain that delivers the customer somewhere else.
+
+The first capture wins: once the sign-in URL carries a `redirect`, a further
+rejected request on that page leaves it alone rather than overwriting it with
+the sign-in page.
+
+Destinations are compared by path, so this does not help a portal whose pages
+are told apart only by a fragment — with `signInPageUrl: "#sign-in"` every
+destination on the same path reads as the sign-in page and falls back to
+`homePageUrl`. Give your sign-in page its own path to use this.
+
+There is no option to relax the origin check, and no option to turn the
+parameter off.
 
 ## Where the session is stored
 
@@ -58,9 +95,9 @@ Signing out clears only this store's own keys, never the whole origin — so unr
 You do not write session handling. The sequence:
 
 1. **Reading.** Every API request attaches the stored token as a bearer credential. No token means no header, and the API answers accordingly.
-2. **Rejection.** When the API returns 401, Inflow drops the entire response cache, forgets the token, and redirects to your `signInPageUrl`. It checks it is not already on that page first, so there is no redirect loop.
-3. **Signing in.** A successful `portal.signIn` stores the session and sends the visitor to `homePageUrl`. Creating an account does the same.
-4. **Signing out.** `portal.signOut` clears this store's keys, removes the token, and returns to `signInPageUrl`.
+2. **Rejection.** When the API returns 401, Inflow drops the entire response cache, forgets the token, and redirects to your `signInPageUrl` with a `redirect` parameter naming the page the visitor was on. It checks it is not already on that page first, so there is no redirect loop.
+3. **Signing in.** A successful `portal.signIn` stores the session and sends the visitor back to the page named by `redirect`, or to `homePageUrl` when there is none. Creating an account does the same.
+4. **Signing out.** `portal.signOut` clears this store's keys, removes the token, and returns to `signInPageUrl`. It adds no `redirect` parameter — signing out is not a request to come back.
 
 `portal.isLoggedIn()` reports whether a token exists. It does **not** validate it — an expired token still reads as logged in until a request fails. So use it for rendering decisions, not as a security boundary:
 
