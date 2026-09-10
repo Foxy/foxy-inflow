@@ -5,7 +5,7 @@ import {
   Directive,
 } from "../Directive";
 
-import memoize from "lodash-es/memoize";
+import { memoize } from "lodash-es";
 
 export type SourceDirectiveConfig = {
   prefix: string;

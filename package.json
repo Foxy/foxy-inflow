@@ -1,22 +1,90 @@
 {
-  "name": "foxy-inflow",
-  "private": true,
+  "name": "@foxy.io/inflow",
   "version": "0.0.0",
+  "description": "A directive-based, HTML-first reactive engine for building Foxy customer portals.",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Foxy/foxy-inflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Foxy/foxy-inflow/issues",
+    "email": "hello@foxy.io"
+  },
+  "homepage": "https://github.com/Foxy/foxy-inflow#readme",
+  "keywords": [
+    "foxy.io",
+    "foxy",
+    "customer-portal",
+    "directives",
+    "reactive"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "module": "./dist/npm/index.js",
+  "types": "./dist/npm/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/npm/types/index.d.ts",
+      "import": "./dist/npm/index.js"
+    },
+    "./portal": {
+      "types": "./dist/npm/types/entries/portal.d.ts",
+      "import": "./dist/npm/portal.js"
+    },
+    "./core": {
+      "types": "./dist/npm/types/entries/core.d.ts",
+      "import": "./dist/npm/core.js"
+    }
+  },
+  "files": [
+    "dist/npm"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
+    "build": "npm run build:npm && npm run build:cdn",
+    "build:npm": "vite build --mode npm",
+    "build:cdn": "vite build --mode cdn",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm test",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepack": "npm run build:npm"
+  },
+  "release": {
+    "branches": [
+      "main",
+      {
+        "name": "beta",
+        "prerelease": true
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/npm",
+      [
+        "@semantic-release/github",
+        {
+          "successComment": false
+        }
+      ]
+    ]
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.12",
     "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^30.0.1",
+    "semantic-release": "^24.2.9",
     "typescript": "~5.7.2",
     "vite": "^6.1.0",
+    "vite-plugin-dts": "^4.5.4",
     "vitest": "^4.1.10"
   },
   "dependencies": {

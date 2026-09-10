@@ -56,7 +56,11 @@ export class InflowCore {
 
   base: string;
 
-  requestUpdate = debounce(() => {
+  // Annotated rather than inferred: without this the public type is lodash's
+  // DebouncedFunc, which drags `@types/lodash` into the published
+  // declarations. Nothing here uses its `cancel`/`flush`, and the documented
+  // surface is a plain call.
+  requestUpdate: () => void = debounce(() => {
     this.#beforeUpdateHandlers.forEach((fn) => fn());
     this.#beforeUpdateHandlers.length = 0;
     this.#afterUpdateHandlers.length = 0;

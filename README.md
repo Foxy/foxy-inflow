@@ -16,7 +16,7 @@ You author views with `data-` attributes bound to a sandboxed expression context
 
 ```html
 <script type="module">
-  import { Portal } from "https://cdn-js.foxy.io/inflow@1/inflow.js";
+  import { Portal } from "https://cdn-js.foxy.io/inflow@1/index.js";
 
   new Portal({
     signInPageUrl: "/sign_in.html",
@@ -26,7 +26,7 @@ You author views with `data-` attributes bound to a sandboxed expression context
 </script>
 ```
 
-That bundle is not published yet — see [Getting started](docs/getting-started.md) for the current situation and the rest of the setup.
+Prefer a bundler? `npm install @foxy.io/inflow`. See [Getting started](docs/getting-started.md) for the rest of the setup.
 
 ## Documentation
 
@@ -54,6 +54,7 @@ Point `src/demo.ts` at your own store first.
 ## Development
 
 ```
-npm run build     # type-check and build
-npm test          # run the test suite
+npm run dev       # serve the demo pages
+npm run verify    # type-check and run the test suite
+npm run build     # build both distributions into dist/
 ```
