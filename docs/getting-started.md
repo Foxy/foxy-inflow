@@ -4,11 +4,9 @@ This page gets one page of a portal rendering. For a full portal, follow [Buildi
 
 ## Install
 
-> **Not published yet.** The bundle URL below is the intended distribution for Inflow, but it is not live. Until it ships, use Inflow from a checkout of the repository. The URL and its major version may still change.
-
 ```html
 <script type="module">
-  import { Portal } from "https://cdn-js.foxy.io/inflow@1/inflow.js";
+  import { Portal } from "https://cdn-js.foxy.io/inflow@1/index.js";
 
   new Portal({
     signInPageUrl: "/sign_in.html",
@@ -19,6 +17,28 @@ This page gets one page of a portal rendering. For a full portal, follow [Buildi
 ```
 
 Construct `Portal` once per page. It reads the document, applies every directive it finds, and re-renders when data or state changes.
+
+The bundle has three entry points. `index.js` is the one to reach for:
+
+| URL | Exports |
+|---|---|
+| `inflow@1/index.js` | `Portal`, `Core`, `Directive` |
+| `inflow@1/portal.js` | `Portal` |
+| `inflow@1/core.js` | `Core`, `Directive` |
+
+`core.js` is a smaller download when you do not need `Portal`. `portal.js` loads the same code as `index.js` and only narrows what it exports.
+
+`@1` tracks the latest 1.x release. Pin harder with `@1.2` or `@1.2.3` if you would rather choose when to move.
+
+With a bundler, install from npm instead. The same three entry points are `@foxy.io/inflow`, `@foxy.io/inflow/portal` and `@foxy.io/inflow/core`, and the package ships TypeScript declarations:
+
+```sh
+npm install @foxy.io/inflow
+```
+
+```js
+import { Portal } from "@foxy.io/inflow";
+```
 
 ## The three required options
 
@@ -71,7 +91,7 @@ This is a complete page. It greets the signed-in customer by name:
     </div>
 
     <script type="module">
-      import { Portal } from "https://cdn-js.foxy.io/inflow@1/inflow.js";
+      import { Portal } from "https://cdn-js.foxy.io/inflow@1/index.js";
 
       new Portal({
         signInPageUrl: "/sign_in.html",

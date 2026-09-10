@@ -125,7 +125,13 @@ class TitleDirective extends Directive {
 }
 ```
 
-> **`Directive` is not exported from the package entry point.** Only `Portal` and `Core` are. Until that changes, subclassing it means importing from the module that defines it inside a checkout of the source — it is not reachable from the published bundle. If you are working against the bundle, prefer [an alias](directives.md#aliases) or [a handler on the context](#your-own-context-values).
+`Directive` is exported alongside `Portal` and `Core`, so import it from wherever you imported those:
+
+```js
+import { Directive, Portal } from "https://cdn-js.foxy.io/inflow@1/index.js";
+```
+
+The `core.js` entry point exports it too, for a page that uses `Core` rather than `Portal`.
 
 Register it with the `directives` option, which takes already-constructed instances:
 
@@ -211,7 +217,7 @@ Overriding a built-in alias logs a warning rather than failing.
 `Core` is the second export. It is `Portal` minus authentication, the actions and the Customer API sources — the rendering engine and the directives on their own. Reach for it when you want directive-driven markup against something other than the Foxy Customer API.
 
 ```js
-import { Core } from "https://cdn-js.foxy.io/inflow@1/inflow.js";
+import { Core } from "https://cdn-js.foxy.io/inflow@1/core.js";
 
 const core = new Core({
   base: "https://api.example.com/",

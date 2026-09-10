@@ -56,4 +56,10 @@ Documentation lives in `docs/`, one Markdown page per task, indexed by `docs/REA
 
 The format is settled: Markdown in `docs/`, **no Storybook**. Inflow ships directives, not components, so there is nothing to mount per story; the demo pages in the repo root remain the runnable examples. Extend those rather than adding a second docs tool.
 
-The CDN bundle URL in the docs is **not published yet**, and it appears in more than one file — `grep -rn "cdn-js.foxy.io/inflow"` before changing it, and update every hit. `docs/getting-started.md` is the page that explains its status; the others just use it in a snippet.
+## Distribution
+
+Two builds from one `vite.config.ts`, switched by mode. `build:npm` writes `dist/npm` with `lodash-es`, `lru-cache` and `zod` left external and declarations under `dist/npm/types`; `build:cdn` writes `dist/cdn` with those three inlined, minified, plus a generated `LICENSE.md` their licences require. Three entry points in both — `index.js` (everything), `portal.js`, `core.js` — declared in `package.json`'s `exports` and mirrored by the CDN paths.
+
+Releases are semantic-release on pushes to `main` and `beta`, so **commit messages decide the version**. It publishes to npm and, in the same workflow, uploads `dist/cdn` to `cdn-js.foxy.io/inflow@<version>/`. The CDN job reads the version from `package.json` after semantic-release rewrites it, which is also how it knows whether anything shipped — do not reorder those steps.
+
+The CDN URL appears in more than one doc — `grep -rn "cdn-js.foxy.io/inflow"` before changing it, and update every hit.
