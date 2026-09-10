@@ -14,13 +14,13 @@ Two public exports (`src/inflow/index.ts`): `Core` (`InflowCore`) and `Portal` (
 ## Directives
 
 - One file per directive in `src/inflow/directives/`, each a `Directive` subclass overriding `apply()`.
-- Register new ones in the `InflowCore` constructor's `#directives` array. **Order matters** — `render()` iterates directives and the first matching attribute wins per directive, so a directive that stashes or skips children (`if`, `if-not`, `for`) must come before ones that read the node.
+- Register new ones in the `InflowCore` constructor's `#directives` array. **Order matters** — `render()` iterates directives in that order, so a directive that stashes or skips children (`if`, `if-not`, `for`) must come before ones that read the node.
 - Two matching styles: `prefix: "if"` matches `data-if` exactly, `prefix: "on-"` (trailing hyphen) matches `data-on-*` by prefix.
 - Aliases live in `#directiveAliases` — `text` → `prop-textcontent`, `href` → `attr-href`, `disabled` → `battr-disabled`, and so on. Prefer adding an alias over a new directive when the behaviour already exists.
 
-### Known limitation: one attribute per directive per element
+### Repeating a directive on one element
 
-`render()` selects each directive's attribute with `Array.from(node.attributes).find(...)`, which stops at the first match. So an element can carry at most one `data-attr-*`, one `data-prop-*`, one `data-battr-*` and one `data-on-*` — a second is **silently ignored**. `data-on-click` alongside `data-on-blur` half-works with no diagnostic. Pinned by a test in `directives.test.ts`; don't be surprised by it and don't work around it silently.
+`render()` collects **every** matching attribute per prefix directive and applies them in document order, so an element can carry several `data-attr-*`, `data-prop-*`, `data-battr-*` or `data-on-*` bindings. Exact-match directives are capped at one attribute because the loop hands them stash state it reads only once — a prefix directive must therefore never return `isStashed` or `skipChildren`.
 
 ## Testing
 

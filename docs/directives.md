@@ -16,7 +16,7 @@ Twelve directives ship built in. They are listed here in the order Inflow applie
 - [`data-on-*`](#data-on-) — listen for an event
 - [`data-v8n`](#data-v8n) — validate a form's fields
 
-Then: [aliases](#aliases), [order matters](#order-matters), [one attribute per directive](#one-attribute-per-directive-per-element), and [values are code](#values-are-code).
+Then: [aliases](#aliases), [order matters](#order-matters), [repeating a directive](#repeating-a-directive-on-one-element), and [values are code](#values-are-code).
 
 ## `data-cloak`
 
@@ -198,16 +198,21 @@ Inflow applies directives in a fixed order, listed at the top of this page. The 
 
 This matters when you write your own directive. One that stashes or skips children has to be considered against this ordering — see [Extending Inflow](extending.md).
 
-## One attribute per directive per element
+## Repeating a directive on one element
 
-Inflow finds each directive's attribute by taking the **first** match on the element. So an element can carry at most one `data-attr-*`, one `data-prop-*`, one `data-battr-*` and one `data-on-*`. A second is **silently ignored** — no warning, no error.
+The prefix directives can repeat. An element may carry as many `data-attr-*`, `data-prop-*`, `data-battr-*` and `data-on-*` attributes as it needs, and every one of them is applied, in the order they appear in the markup.
 
 ```html
-<!-- data-on-blur is ignored: data-on-click matched first -->
-<input data-on-click="handleClick" data-on-blur="handleBlur" />
+<!-- both listeners are bound -->
+<input data-on-input="handleInput" data-on-blur="handleBlur" />
+
+<!-- both attributes are set -->
+<a data-href="url" data-attr-title="label"></a>
 ```
 
-Split the bindings across nested elements, or attach the extra listener yourself via [`data-ref`](#data-ref).
+An alias counts as the directive it expands to, so `data-href` and `data-attr-title` above are two `attr-` bindings, not one of each.
+
+The exact-match directives — `data-if`, `data-for`, `data-v8n` and the rest — cannot repeat, because HTML has no way to put the same attribute on an element twice.
 
 ## Values are code
 

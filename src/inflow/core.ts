@@ -155,7 +155,11 @@ export class InflowCore {
 
     if (node instanceof Element) {
       for (const directive of this.#directives) {
-        const attribute = Array.from(node.attributes).find(({ name: key }) => {
+        // Every matching attribute, not just the first. The prefix directives
+        // (`attr-`, `prop-`, `battr-`, `on-`) are the ones an element can
+        // legitimately repeat, and they only ever read and write the host, so
+        // applying each in document order is enough.
+        const matches = Array.from(node.attributes).filter(({ name: key }) => {
           if (!key.startsWith(this.#prefix)) return false;
 
           const strippedKey = key.substring(this.#prefix.length);
@@ -166,7 +170,14 @@ export class InflowCore {
             : resolvedKey === directive.prefix;
         });
 
-        if (attribute) {
+        // The exact-match directives are the ones that stash the node or skip
+        // its children, and the loop below reads the stash state it was given
+        // once. Keep them to a single attribute so that stays true: HTML has no
+        // duplicate attribute names, but a custom alias in `directiveAliases`
+        // can resolve a second name onto the same exact prefix.
+        const attributes = directive.prefix.endsWith("-") ? matches : matches.slice(0, 1);
+
+        for (const attribute of attributes) {
           const handlerContext = Object.assign(context, {
             requestUpdate: this.requestUpdate,
             lang,
