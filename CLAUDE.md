@@ -60,6 +60,8 @@ The format is settled: Markdown in `docs/`, **no Storybook**. Inflow ships direc
 
 Two builds from one `vite.config.ts`, switched by mode. `build:npm` writes `dist/npm` with `lodash-es`, `lru-cache` and `zod` left external and declarations under `dist/npm/types`; `build:cdn` writes `dist/cdn` with those three inlined, minified, plus a generated `LICENSE.md` their licences require. Three entry points in both — `index.js` (everything), `portal.js`, `core.js` — declared in `package.json`'s `exports` and mirrored by the CDN paths.
 
-Releases are semantic-release on pushes to `main` and `beta`, so **commit messages decide the version**. It publishes to npm and, in the same workflow, uploads `dist/cdn` to `cdn-js.foxy.io/inflow@<version>/`. The CDN job reads the version from `package.json` after semantic-release rewrites it, which is also how it knows whether anything shipped — do not reorder those steps.
+Releases are semantic-release, so **commit messages decide the version**. The workflow publishes to npm and then uploads `dist/cdn` to `cdn-js.foxy.io/inflow@<version>/`. The CDN job reads the version from `package.json` after semantic-release rewrites it, which is also how it knows whether anything shipped — do not reorder those steps.
+
+**Releasing is currently switched off.** `release.yml` has its `push` trigger commented out and runs only from the Actions tab, defaulting to a dry run. Nothing publishes until someone uncomments that trigger. `verify.yml` is unaffected and still runs on every PR.
 
 The CDN URL appears in more than one doc — `grep -rn "cdn-js.foxy.io/inflow"` before changing it, and update every hit.

@@ -1,9 +1,20 @@
 name: Release
+
+# Releasing is off while the project is not ready to ship. Nothing runs on its
+# own: this workflow only fires when someone starts it from the Actions tab,
+# and it dry-runs unless they clear the checkbox. To turn automatic releases
+# back on, uncomment the `push` trigger below.
 on:
-  push:
-    branches:
-      - main
-      - beta
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report what would be released without publishing anything"
+        type: boolean
+        default: true
+  # push:
+  #   branches:
+  #     - main
+  #     - beta
 
 permissions:
   contents: write
@@ -32,10 +43,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx semantic-release
+        run: npx semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
       # semantic-release writes the released version into package.json without
-      # committing it. It stays at 0.0.0 when the push produced no release, so
-      # this doubles as the "did anything ship?" signal for the CDN job.
+      # committing it. It stays at 0.0.0 when the run produced no release, so
+      # this doubles as the "did anything ship?" signal for the CDN job. A
+      # dry run skips the step that writes it, so it stays 0.0.0 there too.
       - name: Read the released version
         id: version
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
@@ -43,7 +55,9 @@ jobs:
   upload-to-cdn:
     name: Upload to Foxy CDN
     needs: release
-    if: needs.release.outputs.version != '0.0.0'
+    # The version guard alone would already hold on a dry run. Name the dry run
+    # anyway — this job uploads to a public CDN, so leave nothing implicit.
+    if: ${{ !inputs.dry_run && needs.release.outputs.version != '0.0.0' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
