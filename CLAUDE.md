@@ -38,7 +38,7 @@ Directive values are JavaScript evaluated against a sandboxed context (`#createC
 - **Writes** go through a generic `.patch(event)` on any source — `data-action="customer.patch"` is how the profile and change-password pages save. There is no per-field update action; don't add one without checking `.patch` doesn't already cover it.
 - **Actions** are the non-CRUD operations: `signIn`, `signOut`, `resetPassword`, `createAccount`, `createCcToken`.
 
-Validation messages for actions live in `InflowPortal.defaultTranslations`, keyed `<action>.<field>.<zod_error_code>` (e.g. `sign_in.email.invalid`). A `data-v8n` field with no matching key renders nothing, so add the key when you add the field.
+Validation messages for actions live in `InflowPortal.defaultTranslations`, keyed `<action>.<field>.<zod_error_code>` (e.g. `sign_in.email.invalid_string`). zod emits three codes here — `too_small`, `too_big` and `invalid_string`; it never emits `too_long` or `invalid`, and keys naming those were unreachable for a year. A field whose code has no matching key falls back to the raw code, so add the key when you add the field.
 
 ## Storage Is Scoped Per Store
 

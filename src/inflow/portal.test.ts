@@ -122,3 +122,49 @@ describe("InflowPortal session storage", () => {
     expect(isLoggedIn(cookiePortal())).toBe(false);
   });
 });
+
+// Every default message is looked up as `<group>.<field>.<zod_issue_code>`, and
+// a missing key falls through to the raw code — so a key naming a code zod never
+// emits is invisible until a customer sees `too_big` in the form. These tests
+// walk `defaultTranslations` itself: every key must be reachable by some input,
+// which is what stops a rename or a new key from going out unreachable again.
+describe("InflowPortal default validation messages", () => {
+  // Valid email shape, 101 characters — long enough for `too_big` without
+  // tripping the format check first, which would report `invalid_string`.
+  const LONG_EMAIL = `${"a".repeat(95)}@b.com`;
+
+  const groups: Record<string, string> = {
+    sign_in: "signIn",
+    sign_up: "createAccount",
+    reset_password: "resetPassword",
+  };
+
+  // The input that makes a given field report a given code.
+  function input(field: string, code: string) {
+    if (code === "too_small") return "";
+    if (code === "invalid_string") return "nope";
+    return field === "email" ? LONG_EMAIL : "x".repeat(51);
+  }
+
+  const keys = Object.keys(InflowPortal.defaultTranslations);
+
+  it.each(keys)("resolves %s to a message rather than the raw code", (key) => {
+    const [group, field, code] = key.split(".");
+    const { v8n } = portal(BASE_A).globalContext.portal as {
+      v8n: Record<string, Record<string, (value: string) => string>>;
+    };
+
+    const validate = v8n[groups[group]][field];
+    expect(validate).toBeTypeOf("function");
+    expect(validate(input(field, code))).toBe(
+      InflowPortal.defaultTranslations[key as keyof typeof InflowPortal.defaultTranslations]
+    );
+  });
+
+  // zod 3 emits `too_small`, `too_big` and `invalid_string`. The defaults used to
+  // be keyed `too_long` and `invalid`, which it never emits.
+  it("keys every default with a code zod actually emits", () => {
+    const codes = keys.map((key) => key.split(".")[2]);
+    expect([...new Set(codes)].sort()).toEqual(["invalid_string", "too_big", "too_small"]);
+  });
+});

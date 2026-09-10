@@ -119,13 +119,17 @@ Note the naming split, which decides how you use each group. `signIn`, `createAc
 
 ## Validation messages
 
-**Read this before relying on the bundled messages.** Inflow ships default messages, but most of them cannot be reached, so forms show raw validation codes such as `too_big` instead of a sentence.
+Inflow ships default messages in English for the sign-in, account-creation and
+password-reset forms. Four groups have no defaults — see [Groups without
+defaults](#groups-without-defaults) below.
 
-Here is why. Each validator looks up its message by a key built from the group, the field and the validation code:
+Each validator looks up its message by a key built from the group, the field and the validation code:
 
 ```
 <group>.<field>.<code>
 ```
+
+The group segment is snake_case, not the property name: `signIn` looks up `sign_in.*`, `createAccount` looks up `sign_up.*`, `resetPassword` looks up `reset_password.*`.
 
 The codes come from the underlying validation library, and there are three in practice:
 
@@ -135,16 +139,27 @@ The codes come from the underlying validation library, and there are three in pr
 | `too_big` | longer than the maximum |
 | `invalid_string` | wrong format — an email that is not an email, a frequency that does not match the pattern |
 
-The bundled defaults are keyed with `too_long` and `invalid`, which the library never emits. Of seventeen default messages, four can ever appear:
+Nineteen defaults ship, covering every field of three groups:
 
-- `sign_in.password.too_small`
-- `sign_up.first_name.too_small`
-- `sign_up.last_name.too_small`
-- `sign_up.password.too_small`
+| Group | Fields covered | Codes |
+|---|---|---|
+| `sign_in` | `email` | `too_small`, `too_big`, `invalid_string` |
+| `sign_in` | `password` | `too_small`, `too_big` |
+| `sign_up` | `email` | `too_small`, `too_big`, `invalid_string` |
+| `sign_up` | `first_name`, `last_name`, `password`, `password_old` | `too_small`, `too_big` |
+| `reset_password` | `email` | `too_small`, `too_big`, `invalid_string` |
 
-Everything else falls through to the raw code. Email fields never show a "required" message either, because an empty value reports `invalid_string` first and only the first code is used. And four groups — `customer`, `defaultPaymentMethod`, `subscription`, `customerAddress` — have no defaults at all.
+A code with no matching key falls through to the raw code, so the field shows `too_big` instead of a sentence. Supplying the key fixes it.
 
-**So supply your own messages.** Pass `v8nTranslations` when constructing the portal, keyed with the real codes:
+### Groups without defaults
+
+`customer`, `defaultPaymentMethod`, `subscription` and `customerAddress` ship no messages, so their fields show raw codes until you supply your own.
+
+Watch the key namespace for two of them. `customerAddress` looks its messages up under `customer.*`, not `customer_address.*` — `customerAddress.firstName` reads `customer.first_name.<code>`, the same key `customer.first_name` uses. `defaultPaymentMethod` looks up `default_payment_method.*`.
+
+### Supplying your own messages
+
+Pass `v8nTranslations` when constructing the portal:
 
 ```js
 new Portal({
@@ -154,7 +169,6 @@ new Portal({
 
   v8nTranslations: {
     "sign_in.email.invalid_string": "Enter a valid email address.",
-    "sign_in.email.too_big": "That email address is too long.",
     "sign_in.password.too_small": "Enter your password.",
 
     "customer.first_name.too_small": "Enter your first name.",
@@ -166,9 +180,9 @@ new Portal({
 });
 ```
 
-Your entries are merged over the defaults, so you only need the keys you care about. Anything you leave out keeps showing the raw code.
+Your entries are merged over the defaults, so you only need the keys you care about — the ones you want reworded, and the ones for groups that have none. Translating the whole portal means supplying every key, including the nineteen that have English defaults.
 
-One consequence worth knowing: because unmapped codes surface raw, markup can branch on them. This works, and you will see it in the demo pages:
+One consequence worth knowing: because an unmapped code surfaces raw, markup can branch on it. The demo pages do this for address fields, which have no defaults:
 
 ```html
 <p data-if="refs.firstName.validationMessage === 'too_big'">
@@ -176,7 +190,7 @@ One consequence worth knowing: because unmapped codes surface raw, markup can br
 </p>
 ```
 
-It is a workaround, not a pattern to build on — supply `v8nTranslations` instead.
+It is a workaround, not a pattern to build on. It breaks the moment a message exists for that key — including one you add yourself — because `validationMessage` then holds the sentence, not the code. Supply `v8nTranslations` and render `validationMessage` instead.
 
 ## Server-side errors
 

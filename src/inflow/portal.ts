@@ -14,23 +14,25 @@ export type InflowPortalConfig = {
 
 export class InflowPortal extends InflowCore {
   static defaultTranslations = {
-    "sign_in.password.too_long": "Password must not be longer than 50 characters.",
+    "sign_in.password.too_big": "Password must not be longer than 50 characters.",
     "sign_in.password.too_small": "Password is required.",
-    "sign_in.email.too_long": "Email must not be longer than 100 characters.",
-    "sign_in.email.invalid": "Email is invalid.",
+    "sign_in.email.too_big": "Email must not be longer than 100 characters.",
+    "sign_in.email.invalid_string": "Email is invalid.",
     "sign_in.email.too_small": "Email is required.",
-    "reset_password.email.too_long": "Email must not be longer than 100 characters.",
-    "reset_password.email.invalid": "Email is invalid.",
+    "reset_password.email.too_big": "Email must not be longer than 100 characters.",
+    "reset_password.email.invalid_string": "Email is invalid.",
     "reset_password.email.too_small": "Email is required.",
-    "sign_up.first_name.too_long": "First name must not be longer than 50 characters.",
+    "sign_up.first_name.too_big": "First name must not be longer than 50 characters.",
     "sign_up.first_name.too_small": "First name is required.",
-    "sign_up.last_name.too_long": "Last name must not be longer than 50 characters.",
+    "sign_up.last_name.too_big": "Last name must not be longer than 50 characters.",
     "sign_up.last_name.too_small": "Last name is required.",
-    "sign_up.email.too_long": "Email must not be longer than 100 characters.",
-    "sign_up.email.invalid": "Email is invalid.",
+    "sign_up.email.too_big": "Email must not be longer than 100 characters.",
+    "sign_up.email.invalid_string": "Email is invalid.",
     "sign_up.email.too_small": "Email is required.",
-    "sign_up.password.too_long": "Password must not be longer than 50 characters.",
+    "sign_up.password.too_big": "Password must not be longer than 50 characters.",
     "sign_up.password.too_small": "Password is required.",
+    "sign_up.password_old.too_big": "Password must not be longer than 50 characters.",
+    "sign_up.password_old.too_small": "Current password is required.",
   };
 
   #storage: "cookie" | "local";
@@ -165,10 +167,14 @@ export class InflowPortal extends InflowCore {
         },
       }),
 
+      // Each validator reports only `issues[0]`, and zod collects string checks
+      // in declaration order — so `.min(1)` has to come before `.email()` or an
+      // empty email reports `invalid_string` and "Email is required." can never
+      // appear. Keep that order when editing the email schemas.
       v8n: {
         signIn: {
           email: (value: string) => {
-            const result = z.string().email().min(1).max(100).safeParse(value);
+            const result = z.string().min(1).email().max(100).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`sign_in.email.${error}`] || error : "";
           },
@@ -190,7 +196,7 @@ export class InflowPortal extends InflowCore {
             return error ? translations[`sign_up.last_name.${error}`] || error : "";
           },
           email: (value: string) => {
-            const result = z.string().email().min(1).max(100).safeParse(value);
+            const result = z.string().min(1).email().max(100).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`sign_up.email.${error}`] || error : "";
           },
@@ -207,9 +213,9 @@ export class InflowPortal extends InflowCore {
         },
         resetPassword: {
           email: (value: string) => {
-            const result = z.string().email().min(1).max(200).safeParse(value);
+            const result = z.string().min(1).email().max(100).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
-            return error ? translations[`reset_password.${error}`] || error : "";
+            return error ? translations[`reset_password.email.${error}`] || error : "";
           },
         },
         customer: {
@@ -229,7 +235,7 @@ export class InflowPortal extends InflowCore {
             return error ? translations[`customer.tax_id.${error}`] || error : "";
           },
           email: (value: string) => {
-            const result = z.string().email().min(1).max(100).safeParse(value);
+            const result = z.string().min(1).email().max(100).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`customer.email.${error}`] || error : "";
           },

@@ -103,7 +103,7 @@ Two separate mechanisms. Do not confuse them: one is validation messages, the ot
 
 **Validation messages** come from `v8nTranslations`, merged over the built-in defaults. Keys are `<group>.<field>.<code>`.
 
-**Read [Forms and validation](forms-and-validation.md#validation-messages) before relying on the defaults.** Most of the bundled messages cannot be reached, so fields show raw codes such as `too_big` until you supply your own. That page lists the real codes and shows a complete example.
+Nineteen defaults ship, in English, covering the sign-in, account-creation and password-reset forms. The `customer`, `defaultPaymentMethod`, `subscription` and `customerAddress` groups have none, so their fields show raw codes such as `too_big` until you supply your own. See [Forms and validation](forms-and-validation.md#validation-messages) for the key list, the codes and a complete example.
 
 **A page's language** is resolved per element from the nearest ancestor carrying a `lang` attribute, falling back to the browser's language. It is exposed to expressions as `lang`, so markup can branch on it:
 
