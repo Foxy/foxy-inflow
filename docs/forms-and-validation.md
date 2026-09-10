@@ -83,7 +83,7 @@ A typical submit button and error list:
 
 A validator takes the field's value and returns an empty string when it is valid, or a message when it is not. The message is applied as the input's custom validity, so the browser shows it and the form refuses to submit.
 
-Validators run on `input` and `change`, and once over every field after the first render — so a field prefilled with a bad value is marked immediately rather than only after the customer touches it.
+Validators run on `input` and `change`, and over every field after each update — so a field prefilled with a bad value is marked immediately rather than only after the customer touches it, and a value that arrives later from the API is checked too.
 
 Because a validator is just a function, you can supply your own:
 
@@ -103,17 +103,17 @@ with `myValidators` on the context — see [Extending Inflow](extending.md). Not
 | `createAccount` | `first_name`, `last_name`, `email`, `password`, `password_old` |
 | `resetPassword` | `email` |
 | `customer` | `first_name`, `last_name`, `tax_id`, `email`, `password`, `password_old` |
-| `defaultPaymentMethod` | `ccToken`, `saveCc` |
-| `subscription` | `nextTransactionDate`, `frequency` |
+| `defaultPaymentMethod` | `cc_token`, `save_cc` |
+| `subscription` | `next_transaction_date`, `frequency` |
 | `customerAddress` | `address_name`, `first_name`, `last_name`, `company`, `address1`, `address2`, `city`, `region`, `postal_code`, `country`, `phone` |
 
-Note the naming split, which decides how you use each group. `signIn`, `createAccount`, `customer` and `customerAddress` use snake_case keys that match input `name` attributes, so you can pass the whole group as the map. `defaultPaymentMethod` and `subscription` use camelCase keys, which do not match typical field names — build a map for those:
+Every key is an input `name`, so you can pass a whole group as the map. To mix groups, or to validate only some of the fields, build the map inline:
 
 ```html
 <form data-v8n="{
-  cc_token: portal.v8n.defaultPaymentMethod.ccToken,
-  save_cc: portal.v8n.defaultPaymentMethod.saveCc
-}" data-action="portal.data.defaultPaymentMethod.patch">
+  first_name: portal.v8n.customer.first_name,
+  address1: portal.v8n.customerAddress.address1
+}" data-action="portal.data.customer.patch">
 ```
 
 ## Validation messages

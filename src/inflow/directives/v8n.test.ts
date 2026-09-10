@@ -42,6 +42,42 @@ describe("data-v8n", () => {
     expect(document.querySelector("input")?.validationMessage).toBe("Email is invalid.");
   });
 
+  // `data-if` stashes the form and restores the SAME node, so anything that
+  // remembered "this form was already validated" would skip the pass on every
+  // mount after the first — leaving a value that changed while the form was
+  // hidden unchecked.
+  it("re-validates the fields when data-if re-mounts the form", () => {
+    const inflow = mount(
+      `<form data-if="ready" data-v8n="validators">` +
+        `<input name="email" value="not-an-email" />` +
+        `</form>`
+    );
+
+    inflow.globalContext.validators = {
+      email: (value: string) => (value.includes("@") ? "" : "Email is invalid."),
+    };
+
+    inflow.globalContext.ready = true;
+    inflow.requestUpdate();
+    vi.advanceTimersByTime(250);
+
+    const input = document.querySelector("input") as HTMLInputElement;
+    expect(input.validationMessage).toBe("Email is invalid.");
+
+    inflow.globalContext.ready = false;
+    inflow.requestUpdate();
+    vi.advanceTimersByTime(250);
+
+    // What a refetch does through data-value while the form is stashed.
+    input.value = "customer@example.com";
+
+    inflow.globalContext.ready = true;
+    inflow.requestUpdate();
+    vi.advanceTimersByTime(250);
+
+    expect(input.validationMessage).toBe("");
+  });
+
   it("warns once per host and validates nothing when the host is not a form", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const validate = vi.fn(() => "Email is invalid.");

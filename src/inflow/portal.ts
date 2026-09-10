@@ -245,19 +245,19 @@ export class InflowPortal extends InflowCore {
           },
         },
         defaultPaymentMethod: {
-          ccToken: (value: string) => {
+          cc_token: (value: string) => {
             const result = z.string().min(1).safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`default_payment_method.cc_token.${error}`] || error : "";
           },
-          saveCc: (value: boolean) => {
+          save_cc: (value: boolean) => {
             const result = z.boolean().safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`default_payment_method.save_cc.${error}`] || error : "";
           },
         },
         subscription: {
-          nextTransactionDate: (value: string) => {
+          next_transaction_date: (value: string) => {
             const result = z.string().datetime().safeParse(value);
             const error = result.error?.issues.map((issue) => issue.code)[0] ?? "";
             return error ? translations[`subscription.next_transaction_date.${error}`] || error : "";

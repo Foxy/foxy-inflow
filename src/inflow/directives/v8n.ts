@@ -1,8 +1,6 @@
 import { type DirectiveRendererParams, type DirectiveRendererResult, Directive } from "../Directive";
 
 export class V8NDirective extends Directive {
-  #initializedForms = new WeakSet<HTMLFormElement>();
-
   #warnedHosts = new WeakSet<ChildNode>();
 
   apply(params: DirectiveRendererParams): DirectiveRendererResult | void {
@@ -46,13 +44,15 @@ export class V8NDirective extends Directive {
           host.removeEventListener(eventType, onEvent);
         });
       },
+      // Every field, not just the one the customer touched: a value that
+      // arrived through `data-value` needs checking too. This used to run only
+      // on the form's first render, which skipped the pass whenever `data-if`
+      // re-mounted the form. Re-running it is idempotent — a field that is now
+      // valid has its custom validity cleared.
       afterUpdate: () => {
-        if (!this.#initializedForms.has(host)) {
-          this.#initializedForms.add(host);
-          Array.from(host.elements).forEach((element) => {
-            if (element instanceof HTMLInputElement) validate(element);
-          });
-        }
+        Array.from(host.elements).forEach((element) => {
+          if (element instanceof HTMLInputElement) validate(element);
+        });
       },
     };
   }
