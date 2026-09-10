@@ -57,6 +57,15 @@ favour of `homePageUrl`, and so is the sign-in page itself, which would
 otherwise loop. Without that check the sign-in page would be an open redirect:
 a link showing your domain that delivers the customer somewhere else.
 
+The first capture wins: once the sign-in URL carries a `redirect`, a further
+rejected request on that page leaves it alone rather than overwriting it with
+the sign-in page.
+
+Destinations are compared by path, so this does not help a portal whose pages
+are told apart only by a fragment — with `signInPageUrl: "#sign-in"` every
+destination on the same path reads as the sign-in page and falls back to
+`homePageUrl`. Give your sign-in page its own path to use this.
+
 There is no option to relax the origin check, and no option to turn the
 parameter off.
 
