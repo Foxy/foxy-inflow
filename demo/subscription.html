@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inflow Demo</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-source="portal.data.settings" data-cloak>
+      <div data-if="settings.isLoading">Loading...</div>
+      <div data-if="settings.isReady">
+        <div data-if="portal.isLoggedIn()">
+          <div
+            data-source="{ sub: new URL(location.href).searchParams.get('href') }"
+          >
+            <h1>Subscription</h1>
+
+            <p><a href="/">Return to home page</a></p>
+            <p data-if="sub.isLoading">Loading...</p>
+            <p data-if="sub.hasFailedToLoad">
+              We could not load this subscription.
+            </p>
+
+            <div data-if="sub.isReady">
+              <p>
+                Status:
+                <span data-text="sub.is_active ? 'Active' : 'Inactive'"></span>
+              </p>
+              <p>Frequency: <span data-text="sub.frequency"></span></p>
+
+              <form data-action="sub.patch" data-v8n="portal.v8n.subscription">
+                <div>
+                  <label for="next_transaction_date">Next payment date:</label>
+                  <input
+                    id="next_transaction_date"
+                    type="date"
+                    name="next_transaction_date"
+                    data-ref="nextDate"
+                    data-value="sub.next_transaction_date.slice(0, 10)"
+                  />
+
+                  <p
+                    class="error-message"
+                    aria-live="polite"
+                    data-if="refs.nextDate && (refs.nextDate.value || refs.nextDate.dataset.touched) && refs.nextDate.validationMessage"
+                    data-text="refs.nextDate.validationMessage"
+                  ></p>
+                </div>
+
+                <br />
+
+                <button type="submit" data-disabled="sub.patch.isSubmitting">
+                  <span data-if="sub.patch.isSubmitting">Saving...</span>
+                  <span data-if-not="sub.patch.isSubmitting">Save</span>
+                </button>
+              </form>
+
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-for="error in sub.patch.errors"
+              >
+                <span data-text="error.message"></span>
+              </p>
+
+              <div
+                data-source="{ subTransactions: (()=>{const u=new URL(sub.raw._links['fx:transactions'].href);u.searchParams.set('zoom','items');return u.toString()})() }"
+              >
+                <h2>Transactions</h2>
+
+                <p data-if="subTransactions.isLoading">Loading...</p>
+                <p
+                  data-if="subTransactions.isReady && !subTransactions.totalItems"
+                >
+                  No transactions for this subscription yet.
+                </p>
+
+                <table
+                  data-if="subTransactions.isReady && subTransactions.totalItems"
+                >
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Items</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Receipt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr data-for="t in subTransactions.items">
+                      <td data-text="format.datetime(t.transaction_date)"></td>
+                      <td>
+                        <div
+                          data-for="i in t._embedded['fx:items']"
+                          data-text="`${i.name} × ${i.quantity}`"
+                        ></div>
+                      </td>
+                      <td
+                        data-text="format.currency(`${t.total_order}${t.currency_code}`)"
+                      ></td>
+                      <td data-text="t.status || 'completed'"></td>
+                      <td>
+                        <a
+                          data-href="t._links['fx:receipt'].href"
+                          data-attr-target="'_blank'"
+                          >View receipt</a
+                        >
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <p
+                  data-if="subTransactions.isReady && subTransactions.needsPagination"
+                >
+                  <button
+                    data-on-click="subTransactions.loadPreviousPage"
+                    data-disabled="subTransactions.isFirstPage"
+                  >
+                    Previous
+                  </button>
+                  <span
+                    data-text="`${subTransactions.offset + 1}–${subTransactions.offset + subTransactions.returnedItems} of ${subTransactions.totalItems}`"
+                  ></span>
+                  <button
+                    data-on-click="subTransactions.loadNextPage"
+                    data-disabled="subTransactions.isLastPage"
+                  >
+                    Next
+                  </button>
+                </p>
+              </div>
+
+              <p>
+                <a
+                  data-href="(()=>{const u=new URL(sub.raw._links['fx:sub_token_url'].href);u.searchParams.set('cart','checkout');u.searchParams.set('sub_restart','auto');return u.toString()})()"
+                  >Update billing</a
+                >
+              </p>
+              <p data-if="!sub.end_date">
+                <a
+                  data-href="(()=>{const u=new URL(sub.raw._links['fx:sub_token_url'].href);u.searchParams.set('sub_cancel','true');return u.toString()})()"
+                  >End subscription</a
+                >
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div data-if-not="portal.isLoggedIn()">
+          You are logged out. <a href="/sign_in">Sign in here</a>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

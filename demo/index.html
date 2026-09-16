@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inflow Demo</title>
+    <style>
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-cloak>
+      <div
+        data-if="portal.data.settings.isLoading || portal.data.customer.isLoading"
+      >
+        Loading...
+      </div>
+      <div
+        data-if="portal.data.settings.isReady && portal.data.customer.isReady"
+      >
+        <h1>
+          Welcome back,
+          <span data-text="portal.data.customer.first_name"></span>!
+        </h1>
+
+        <p>
+          <a href="/profile">Edit profile</a>
+          <a href="/change_password">Change password</a>
+          <button data-on-click="portal.signOut">Sign out</button>
+        </p>
+
+        <h2>Subscriptions</h2>
+        <div data-source="portal.data.subscriptions">
+          <p data-if="subscriptions.isLoading">Loading...</p>
+          <table data-if="subscriptions.isReady">
+            <thead>
+              <tr>
+                <th>Start Date</th>
+                <th>Next Payment</th>
+                <th>End Date</th>
+                <th>Frequency</th>
+                <th>Manage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-for="s, i in subscriptions.items">
+                <td data-text="format.date(s.start_date)"></td>
+                <td data-text="format.date(s.next_transaction_date)"></td>
+                <td>
+                  <span data-if="s.end_date === null">N/A</span>
+                  <span
+                    data-if="s.end_date !== null"
+                    data-text="format.date(s.end_date)"
+                  ></span>
+                </td>
+                <td data-text="s.frequency"></td>
+                <td>
+                  <a
+                    data-href="'/subscription.html?href=' + encodeURIComponent(s._links.self.href)"
+                    >View subscription</a
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p data-if="subscriptions.isReady && subscriptions.needsPagination">
+            <button
+              data-disabled="subscriptions.isFirstPage"
+              data-on-click="subscriptions.loadFirstPage"
+            >
+              First
+            </button>
+            <button
+              data-disabled="subscriptions.isFirstPage"
+              data-on-click="subscriptions.loadPreviousPage"
+            >
+              Previous
+            </button>
+
+            <span>
+              <span data-text="subscriptions.offset + 1"></span>
+              <span>&mdash;</span>
+              <span
+                data-text="subscriptions.offset + subscriptions.returnedItems"
+              ></span>
+              <span>out of</span>
+              <span data-text="subscriptions.totalItems"></span>
+            </span>
+
+            <button
+              data-disabled="subscriptions.isLastPage"
+              data-on-click="subscriptions.loadNextPage"
+            >
+              Next
+            </button>
+            <button
+              data-disabled="subscriptions.isLastPage"
+              data-on-click="subscriptions.loadLastPage"
+            >
+              Last
+            </button>
+          </p>
+        </div>
+
+        <h2>Transactions</h2>
+        <div data-source="portal.data.transactions">
+          <p data-if="transactions.isLoading">Loading...</p>
+          <table data-if="transactions.isReady">
+            <thead>
+              <tr>
+                <th>Amount</th>
+                <th>Summary</th>
+                <th>Status</th>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Receipt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-for="t in transactions.items">
+                <td
+                  data-text="format.currency(`${t.total_order}${t.currency_code}`)"
+                ></td>
+                <td>
+                  <span data-for="i in t._embedded['fx:items']">
+                    <span data-text="i.name"></span>
+                    (x<span data-text="i.quantity"></span>)
+                    <br />
+                  </span>
+                </td>
+                <td data-text="t.status || 'completed'"></td>
+                <td data-text="t.id"></td>
+                <td data-text="format.datetime(t.transaction_date)"></td>
+                <td>
+                  <a target="_blank" data-href="t._links['fx:receipt'].href">
+                    View receipt
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p data-if="transactions.isReady && transactions.needsPagination">
+            <button
+              data-disabled="transactions.isFirstPage"
+              data-on-click="transactions.loadFirstPage"
+            >
+              First
+            </button>
+            <button
+              data-disabled="transactions.isFirstPage"
+              data-on-click="transactions.loadPreviousPage"
+            >
+              Previous
+            </button>
+
+            <span>
+              <span data-text="transactions.offset + 1"></span>
+              <span>&mdash;</span>
+              <span
+                data-text="transactions.offset + transactions.returnedItems"
+              ></span>
+              <span>out of</span>
+              <span data-text="transactions.totalItems"></span>
+            </span>
+
+            <button
+              data-disabled="transactions.isLastPage"
+              data-on-click="transactions.loadNextPage"
+            >
+              Next
+            </button>
+            <button
+              data-disabled="transactions.isLastPage"
+              data-on-click="transactions.loadLastPage"
+            >
+              Last
+            </button>
+          </p>
+        </div>
+
+        <h2>Addresses</h2>
+        <div data-source="portal.data.addresses">
+          <p data-if="addresses.isLoading">Loading...</p>
+          <div data-if="addresses.isReady">
+            <p data-for="address in addresses.items">
+              <span>
+                <span data-if="address.is_default_billing">
+                  Billing address
+                </span>
+                <span data-if="address.is_default_shipping">
+                  Shipping address
+                </span>
+                <span
+                  data-if-not="address.is_default_billing || address.is_default_shipping"
+                  data-text="address.address_name"
+                ></span>
+                <a
+                  data-attr-href="`/address?href=${encodeURIComponent(address._links.self.href)}`"
+                >
+                  Edit details
+                </a>
+              </span>
+              <br />
+              <span data-text="address.first_name"></span>
+              <span data-text="address.last_name"></span>,
+              <span data-text="address.address1"></span>,
+              <span data-text="address.city"></span>
+              <span data-text="address.region"></span>
+              <span data-text="address.postal_code"></span>
+              <span data-text="address.country"></span>.
+            </p>
+            <p data-if="addresses.needsPagination">
+              <button
+                data-disabled="addresses.isFirstPage"
+                data-on-click="addresses.loadFirstPage"
+              >
+                First
+              </button>
+              <button
+                data-disabled="addresses.isFirstPage"
+                data-on-click="addresses.loadPreviousPage"
+              >
+                Previous
+              </button>
+
+              <span>
+                <span data-text="addresses.offset + 1"></span>
+                <span>&mdash;</span>
+                <span
+                  data-text="addresses.offset + addresses.returnedItems"
+                ></span>
+                <span>out of</span>
+                <span data-text="addresses.totalItems"></span>
+              </span>
+
+              <button
+                data-disabled="addresses.isLastPage"
+                data-on-click="addresses.loadNextPage"
+              >
+                Next
+              </button>
+              <button
+                data-disabled="addresses.isLastPage"
+                data-on-click="addresses.loadLastPage"
+              >
+                Last
+              </button>
+            </p>
+          </div>
+        </div>
+
+        <h2>Payment method</h2>
+        <div data-source="portal.data.defaultPaymentMethod">
+          <p data-if="defaultPaymentMethod.isLoading">Loading...</p>
+          <div data-if="defaultPaymentMethod.isReady">
+            <p data-if="defaultPaymentMethod.save_cc">
+              <span data-text="defaultPaymentMethod.cc_type"></span>
+              <span data-text="defaultPaymentMethod.cc_number_masked"></span>
+              <br />
+              <span>Expires: </span>
+              <span data-text="defaultPaymentMethod.cc_exp_month"></span>
+              <span data-text="defaultPaymentMethod.cc_exp_year"></span>
+            </p>
+            <p data-if-not="defaultPaymentMethod.save_cc">
+              No payment method on file.
+              <br />
+              <a href="/add_payment_method">Add payment method</a>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div
+        data-if="portal.data.settings.hasFailedToLoad || portal.data.customer.hasFailedToLoad"
+      >
+        <p>Error loading data</p>
+        <button data-on-click="portal.signOut">Sign out</button>
+      </div>
+    </div>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inflow Demo</title>
+    <style>
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-cloak>
+      <h1>Create an account</h1>
+
+      <div data-if="portal.data.settings.isLoading">Loading...</div>
+
+      <div data-if="portal.data.settings.isReady">
+        <p data-if="portal.isLoggedIn()">
+          You are already logged in.
+          <a href="/">Please visit your portal here.</a>
+        </p>
+
+        <form
+          data-if-not="portal.isLoggedIn()"
+          data-v8n="portal.v8n.createAccount"
+          data-action="portal.createAccount"
+        >
+          <label
+            >First name:<br /><input name="first_name" data-ref="firstName"
+          /></label>
+          <p
+            class="error-message"
+            aria-live="polite"
+            data-if="refs.firstName && refs.firstName.dataset.touched && refs.firstName.validationMessage"
+            data-text="refs.firstName.validationMessage"
+          ></p>
+          <label
+            >Last name:<br /><input name="last_name" data-ref="lastName"
+          /></label>
+          <p
+            class="error-message"
+            aria-live="polite"
+            data-if="refs.lastName && refs.lastName.dataset.touched && refs.lastName.validationMessage"
+            data-text="refs.lastName.validationMessage"
+          ></p>
+          <label
+            >Email:<br /><input name="email" type="email" data-ref="email"
+          /></label>
+          <p
+            class="error-message"
+            aria-live="polite"
+            data-if="refs.email && refs.email.dataset.touched && refs.email.validationMessage"
+            data-text="refs.email.validationMessage"
+          ></p>
+          <label
+            >Password:<br /><input
+              name="password"
+              type="password"
+              data-ref="password"
+          /></label>
+          <p
+            class="error-message"
+            aria-live="polite"
+            data-if="refs.password && refs.password.dataset.touched && refs.password.validationMessage"
+            data-text="refs.password.validationMessage"
+          ></p>
+
+          <button>
+            <span data-if="portal.createAccount.isSubmitting"
+              >Creating your account...</span
+            >
+            <span data-if-not="portal.createAccount.isSubmitting"
+              >Create an account</span
+            >
+          </button>
+
+          <script src="https://cdn.jsdelivr.net/npm/@hcaptcha/vanilla-hcaptcha"></script>
+          <h-captcha
+            data-attr-site-key="portal.data.settings.sign_up.verification.site_key"
+          ></h-captcha>
+
+          <p>Already have an account? <a href="/sign_in">Sign in</a></p>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

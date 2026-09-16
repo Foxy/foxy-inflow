@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inflow Demo</title>
+    <style>
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-source="portal.data.settings" data-cloak>
+      <div data-if="settings.isLoading">Loading...</div>
+      <div data-if="settings.isReady">
+        <div
+          data-source="{ address: new URL(location.href).searchParams.get('href') }"
+        >
+          <h1>
+            <span
+              data-if-not="address.is_default_billing || address.is_default_shipping"
+              data-text="address.address_name"
+            >
+            </span>
+            <span data-if="address.is_default_billing">Billing address</span>
+            <span data-if="address.is_default_shipping">
+              Shipping address
+            </span>
+          </h1>
+
+          <p><a href="/">Return to home page</a></p>
+          <p data-if="address.isLoading">Loading...</p>
+
+          <form
+            data-if="address.isReady"
+            data-action="address.patch"
+            data-v8n="portal.v8n.customerAddress"
+          >
+            <div>
+              <label for="first_name">First name:</label>
+              <input
+                id="first_name"
+                name="first_name"
+                data-value="address.first_name"
+                data-ref="firstName"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.firstName && refs.firstName.dataset.touched && refs.firstName.validationMessage"
+                data-text="refs.firstName.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="last_name">Last name:</label>
+              <input
+                id="last_name"
+                name="last_name"
+                data-value="address.last_name"
+                data-ref="lastName"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.lastName && refs.lastName.dataset.touched && refs.lastName.validationMessage"
+                data-text="refs.lastName.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="company">Company:</label>
+              <input
+                id="company"
+                name="company"
+                data-value="address.company"
+                data-ref="company"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.company && refs.company.dataset.touched && refs.company.validationMessage"
+                data-text="refs.company.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="phone">Phone:</label>
+              <input
+                id="phone"
+                name="phone"
+                data-value="address.phone"
+                data-ref="phone"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.phone && refs.phone.dataset.touched && refs.phone.validationMessage"
+                data-text="refs.phone.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="address1">Address line 1:</label>
+              <input
+                id="address1"
+                name="address1"
+                data-value="address.address1"
+                data-ref="address1"
+                required
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.address1 && refs.address1.dataset.touched && refs.address1.validationMessage"
+                data-text="refs.address1.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="address2">Address line 2:</label>
+              <input
+                id="address2"
+                name="address2"
+                data-value="address.address2"
+                data-ref="address2"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.address2 && refs.address2.dataset.touched && refs.address2.validationMessage"
+                data-text="refs.address2.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="country">Country:</label>
+              <input
+                id="country"
+                name="country"
+                data-value="address.country"
+                data-ref="country"
+                required
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.country && refs.country.dataset.touched && refs.country.validationMessage"
+                data-text="refs.country.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="region">Region:</label>
+              <input
+                id="region"
+                name="region"
+                data-value="address.region"
+                data-ref="region"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.region && refs.region.dataset.touched && refs.region.validationMessage"
+                data-text="refs.region.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="city">City:</label>
+              <input
+                id="city"
+                name="city"
+                data-value="address.city"
+                data-ref="city"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.city && refs.city.dataset.touched && refs.city.validationMessage"
+                data-text="refs.city.validationMessage"
+              ></p>
+            </div>
+
+            <div>
+              <label for="postal_code">Postal code:</label>
+              <input
+                id="postal_code"
+                name="postal_code"
+                data-value="address.postal_code"
+                data-ref="postalCode"
+              />
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-if="refs.postalCode && refs.postalCode.dataset.touched && refs.postalCode.validationMessage"
+                data-text="refs.postalCode.validationMessage"
+              ></p>
+            </div>
+
+            <br />
+
+            <button type="submit">Save</button>
+          </form>
+
+          <p
+            class="error-message"
+            aria-live="polite"
+            data-for="error in address.patch.errors"
+          >
+            <span data-text="error.message"></span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@hcaptcha/vanilla-hcaptcha"></script>
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en" color-mode="user">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inflow Demo</title>
+    <style>
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-cloak>
+      <h1>Sign in</h1>
+
+      <p data-if="portal.isLoggedIn()">
+        You are already logged in.
+        <a href="/">Please visit your portal here.</a>
+      </p>
+
+      <form
+        data-if-not="portal.isLoggedIn()"
+        data-v8n="portal.v8n.signIn"
+        data-action="portal.signIn"
+      >
+        <label
+          >Email:<br /><input name="email" type="email" data-ref="email"
+        /></label>
+        <p
+          class="error-message"
+          aria-live="polite"
+          data-if="refs.email && refs.email.dataset.touched && refs.email.validationMessage"
+          data-text="refs.email.validationMessage"
+        ></p>
+        <label
+          >Password:<br /><input
+            name="password"
+            type="password"
+            data-ref="password"
+        /></label>
+        <p
+          class="error-message"
+          aria-live="polite"
+          data-if="refs.password && refs.password.dataset.touched && refs.password.validationMessage"
+          data-text="refs.password.validationMessage"
+        ></p>
+
+        <button>
+          <span data-if="portal.signIn.isSubmitting">Signing in...</span>
+          <span data-if-not="portal.signIn.isSubmitting">Sign in</span>
+        </button>
+      </form>
+
+      <p data-for="error in portal.signIn.errors" aria-live="polite">
+        <span data-text="error.message"></span>
+      </p>
+
+      <p>
+        <a href="/reset_password">Forgot password?</a> &bull;
+        <a href="/create_account">Create an account</a>
+      </p>
+    </div>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inflow Demo</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      [data-cloak] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-source="portal.data.settings" data-cloak>
+      <div data-if="settings.isLoading">Loading...</div>
+      <div data-if="settings.isReady">
+        <div data-if="portal.isLoggedIn()">
+          <div data-source="portal.data.defaultPaymentMethod">
+            <h1>Payment method</h1>
+
+            <p><a href="/">Return to home page</a></p>
+            <p data-if="defaultPaymentMethod.isLoading">Loading...</p>
+
+            <div data-if="defaultPaymentMethod.isReady">
+              <p data-if="defaultPaymentMethod.save_cc">
+                Card on file:
+                <span data-text="defaultPaymentMethod.cc_type"></span>
+                <span data-text="defaultPaymentMethod.cc_number_masked"></span>
+                (expires
+                <span data-text="defaultPaymentMethod.cc_exp_month"></span
+                >/<span data-text="defaultPaymentMethod.cc_exp_year"></span>)
+              </p>
+
+              <p data-if-not="defaultPaymentMethod.save_cc">
+                No payment method on file.
+              </p>
+
+              <form
+                data-action="portal.createCcToken(portal.data.defaultPaymentMethod)"
+              >
+                <input name="cc_token" type="hidden" />
+
+                <foxy-payment-card-embed
+                  url="https://embed.foxy.io/v1.html?demo=default"
+                ></foxy-payment-card-embed>
+                <script>
+                  import("https://cdn-js.foxy.io/elements@1/foxy-payment-card-embed.js").then(
+                    () => {
+                      customElements
+                        .get("foxy-i18n")
+                        ?.onResourceFetch((ns, lang) =>
+                          fetch(
+                            `https://cdn-js.foxy.io/elements@1/translations/${ns}/${lang}.json`,
+                          ),
+                        );
+                    },
+                  );
+                </script>
+
+                <br />
+
+                <button
+                  type="submit"
+                  data-disabled="defaultPaymentMethod.patch.isSubmitting"
+                >
+                  <span data-if="defaultPaymentMethod.patch.isSubmitting"
+                    >Saving...</span
+                  >
+                  <span data-if-not="defaultPaymentMethod.patch.isSubmitting"
+                    >Save card</span
+                  >
+                </button>
+              </form>
+
+              <form
+                data-if="defaultPaymentMethod.save_cc"
+                data-action="defaultPaymentMethod.patch"
+              >
+                <input type="hidden" name="save_cc" value="false" data-json />
+
+                <button
+                  type="submit"
+                  data-disabled="defaultPaymentMethod.patch.isSubmitting"
+                >
+                  <span data-if="defaultPaymentMethod.patch.isSubmitting"
+                    >Removing...</span
+                  >
+                  <span data-if-not="defaultPaymentMethod.patch.isSubmitting"
+                    >Remove card</span
+                  >
+                </button>
+              </form>
+
+              <p
+                class="error-message"
+                aria-live="polite"
+                data-for="error in defaultPaymentMethod.patch.errors"
+              >
+                <span data-text="error.message"></span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div data-if-not="portal.isLoggedIn()">
+          You are logged out. <a href="/sign_in">Sign in here</a>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/main.ts"></script>
+  </body>
+</html>
