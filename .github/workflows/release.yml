@@ -38,11 +38,32 @@ jobs:
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Publishing goes through npm trusted publishing (OIDC), which needs
-          # the id-token permission above and no credentials here. The plugin
-          # only reads NPM_TOKEN if the OIDC exchange fails, so this line is a
-          # fallback for the first release on the new setup. Once a run logs
-          # the OIDC path instead of "Wrote NPM_TOKEN", delete it.
+          # NPM_TOKEN is load-bearing, even though a trusted publisher is
+          # configured for this package on npmjs.com and id-token: write is
+          # granted above. Do not remove it without reading the rest of this.
+          #
+          # This repository was created after 2026-07-15, so GitHub mints its
+          # OIDC tokens with the immutable subject format:
+          #
+          #   repo:Foxy@19654159/foxy-inflow@1364910186:ref:refs/heads/main
+          #
+          # npm's exchange endpoint cannot match that format and rejects it
+          # with "404 OIDC token exchange error - package not found" -- the
+          # registry's usual mask for an auth failure, not a real 404. See
+          # npm/cli#9969. There is no opt-out; the format is permanent for
+          # repositories created after that date, so this is npm's to fix.
+          # foxy-elements and foxy-sdk predate the cutoff and are unaffected.
+          #
+          # @semantic-release/npm attempts the exchange first and only reads
+          # this token when it fails, so the run log always names the path it
+          # took. When a run logs "OIDC token exchange with the npm registry
+          # succeeded", npm has shipped the fix: delete this line, then set
+          # Publishing access on the package to "require two-factor
+          # authentication and disallow bypass 2fa tokens".
+          #
+          # Until then the token needs rotating every 90 days -- npm's hard cap
+          # on granular write tokens. It is an org-level secret, so rotating it
+          # affects foxy-elements and foxy-sdk too.
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
       - name: Read the released version
