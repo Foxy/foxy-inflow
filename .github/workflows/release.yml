@@ -38,6 +38,11 @@ jobs:
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Publishing goes through npm trusted publishing (OIDC), which needs
+          # the id-token permission above and no credentials here. The plugin
+          # only reads NPM_TOKEN if the OIDC exchange fails, so this line is a
+          # fallback for the first release on the new setup. Once a run logs
+          # the OIDC path instead of "Wrote NPM_TOKEN", delete it.
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release ${{ inputs.dry_run && '--dry-run' || '' }}
       - name: Read the released version
