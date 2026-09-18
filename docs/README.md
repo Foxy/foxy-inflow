@@ -12,4 +12,4 @@ Foxy Inflow is a directive-based, HTML-first reactive engine for building Foxy c
 - **[Configuration](configuration.md)** — every configuration option, session storage, the authentication lifecycle, and localization.
 - **[Extending Inflow](extending.md)** — your own data sources, actions, context values, and directives.
 - **[Migrating from Foxy Logic](migrating-from-foxy-logic.md)** — how each `foxy-logic-*` attribute maps onto Inflow.
-- **[Agent skills](agent-skills.md)** — the two skills Inflow ships for coding agents, and how to install them.
+- **[Agent skills](agent-skills.md)** — the skill Inflow ships for coding agents, and how to install it.
