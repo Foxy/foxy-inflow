@@ -250,3 +250,21 @@ describe("InflowCore render loop", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("InflowCore expression cache", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("sees a context key added after the expression was first compiled", () => {
+    const inflow = mount(`<p data-text="a || b"></p>`);
+    inflow.globalContext.a = "first";
+    inflow.render();
+
+    inflow.globalContext.a = "";
+    inflow.globalContext.b = "second";
+    inflow.render();
+
+    expect(document.querySelector("p")?.textContent).toBe("second");
+  });
+});
