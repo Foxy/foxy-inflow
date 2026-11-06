@@ -510,3 +510,63 @@ describe("subscription.next_transaction_date", () => {
     expect(validate(value)).toBe("Next payment date is invalid.");
   });
 });
+
+// The help-center SSO redirect page (checkout single sign-on) reads the
+// customer's checkout login URL from the `fx.customer.sso` cookie, the name the
+// previous portal wrote. The authenticate response carries that URL as `sso`
+// when the store has an SSO secret.
+describe("InflowPortal checkout SSO cookie", () => {
+  const SSO =
+    "https://store-a.example.com/checkout?fc_customer_id=1&timestamp=2&fc_auth_token=abc";
+
+  const ssoPortal = (storage: "local" | "cookie") =>
+    new InflowPortal({
+      base: BASE_A,
+      signInPageUrl: "#sign-in",
+      homePageUrl: "#home",
+      storage,
+      manualRender: true,
+    });
+
+  afterEach(() => {
+    localStorage.clear();
+    document.cookie =
+      "fx.customer=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.cookie =
+      "fx.customer.sso=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.body.innerHTML = "";
+  });
+
+  it.each(["local", "cookie"] as const)(
+    "writes the sso URL to fx.customer.sso in %s mode",
+    async (storage) => {
+      await signIn(ssoPortal(storage), { ...SESSION, sso: SSO });
+
+      expect(readCookie("fx.customer.sso")).toBe(SSO);
+    },
+  );
+
+  it("writes no cookie when the response has no sso URL", async () => {
+    await signIn(ssoPortal("local"), SESSION);
+
+    expect(readCookie("fx.customer.sso")).toBe(null);
+  });
+
+  it("removes the cookie on sign-out", async () => {
+    const instance = ssoPortal("local");
+    await signIn(instance, { ...SESSION, sso: SSO });
+
+    (instance.globalContext.portal as { signOut: () => void }).signOut();
+
+    expect(readCookie("fx.customer.sso")).toBe(null);
+  });
+
+  it("removes the cookie when the API rejects the session", async () => {
+    const instance = ssoPortal("local");
+    await signIn(instance, { ...SESSION, sso: SSO });
+
+    await loadUnauthorizedSource(instance);
+
+    expect(readCookie("fx.customer.sso")).toBe(null);
+  });
+});
