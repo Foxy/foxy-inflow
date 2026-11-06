@@ -250,3 +250,195 @@ describe("InflowCore render loop", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * `mount` / `unmount` move one instance between DOM trees — the case is a
+ * client-side router that swaps `<body>` (Astro's `<ClientRouter />`) while the
+ * loaded data should survive the navigation.
+ */
+describe("InflowCore mount and unmount", () => {
+  const tree = (html: string) => {
+    const root = document.createElement("div");
+    root.innerHTML = html;
+    document.body.append(root);
+    return root;
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+    document.body.innerHTML = "";
+  });
+
+  it("renders the new root immediately, keeping the context", () => {
+    const inflow = new InflowCore({
+      root: tree(`<p data-text="greeting"></p>`),
+    });
+    inflow.globalContext.greeting = "Hello";
+    inflow.render();
+
+    const next = tree(`<span data-text="greeting"></span>`);
+    inflow.mount(next);
+
+    expect(next.querySelector("span")?.textContent).toBe("Hello");
+  });
+
+  it("points later updates at the new root", () => {
+    const first = tree(`<p data-text="greeting"></p>`);
+    const inflow = new InflowCore({ root: first });
+    inflow.globalContext.greeting = "Hello";
+    inflow.render();
+
+    const next = tree(`<p data-text="greeting"></p>`);
+    inflow.mount(next);
+    inflow.globalContext.greeting = "Bye";
+    inflow.requestUpdate();
+    vi.advanceTimersByTime(250);
+
+    expect(next.querySelector("p")?.textContent).toBe("Bye");
+    expect(first.querySelector("p")?.textContent).toBe("Hello");
+  });
+
+  it("removes the listeners it added to the old tree", () => {
+    const first = tree(`<button data-on-click="handler"></button>`);
+    const inflow = new InflowCore({ root: first });
+    const handler = vi.fn();
+    inflow.globalContext.handler = handler;
+    inflow.render();
+
+    inflow.unmount();
+    first.querySelector("button")?.click();
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("cancels a pending update", () => {
+    const first = tree(`<p data-text="greeting"></p>`);
+    const inflow = new InflowCore({ root: first });
+    inflow.globalContext.greeting = "Hello";
+    inflow.render();
+
+    inflow.globalContext.greeting = "Bye";
+    inflow.requestUpdate();
+    inflow.unmount();
+    vi.advanceTimersByTime(250);
+
+    expect(first.querySelector("p")?.textContent).toBe("Hello");
+  });
+
+  // A source fetch that resolves between `unmount` and `mount` still calls
+  // `requestUpdate`. That must not throw or render anything.
+  it("renders nothing while unmounted", () => {
+    const first = tree(`<p data-text="greeting"></p>`);
+    const inflow = new InflowCore({ root: first });
+    inflow.globalContext.greeting = "Hello";
+    inflow.render();
+    inflow.unmount();
+
+    inflow.globalContext.greeting = "Bye";
+    inflow.requestUpdate();
+    expect(() => vi.advanceTimersByTime(250)).not.toThrow();
+    expect(() => inflow.render()).not.toThrow();
+    expect(first.querySelector("p")?.textContent).toBe("Hello");
+  });
+
+  // `refs` lives in the global context, so without this the next page would
+  // read the previous page's detached elements through it.
+  it("forgets refs from the old tree", () => {
+    const inflow = new InflowCore({ root: tree(`<input data-ref="email" />`) });
+    inflow.render();
+    inflow.unmount();
+
+    const next = tree(`<p data-text="refs?.email ? 'stale' : 'none'"></p>`);
+    inflow.mount(next);
+
+    expect(next.querySelector("p")?.textContent).toBe("none");
+  });
+
+  // An element carried over into the new tree (`transition:persist`) keeps the
+  // listener from the old tree unless mount runs the full update cycle.
+  it("binds a carried-over element once when mounted without unmount", () => {
+    const first = tree(`<button data-on-click="handler"></button>`);
+    const inflow = new InflowCore({ root: first });
+    const handler = vi.fn();
+    inflow.globalContext.handler = handler;
+    inflow.render();
+
+    const next = tree(``);
+    next.append(first.querySelector("button")!);
+    inflow.mount(next);
+    next.querySelector("button")?.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  // Compiled expressions are cached by their text and destructure the context
+  // keys present at compile time. A new page starts from scratch, as a full
+  // load would, instead of reusing a function compiled for the old page.
+  it("compiles expressions afresh for the new tree", () => {
+    const inflow = new InflowCore({
+      root: tree(`<p data-text="a || b"></p>`),
+    });
+    inflow.globalContext.a = "x";
+    inflow.render();
+    inflow.unmount();
+
+    inflow.globalContext.a = "";
+    inflow.globalContext.b = "y";
+    const next = tree(`<p data-text="a || b"></p>`);
+    inflow.mount(next);
+
+    expect(next.querySelector("p")?.textContent).toBe("y");
+  });
+
+  // A failed source stays failed until its `refresh()` runs. A full page load
+  // would try it again, so the next page does too.
+  it("retries a source that failed on the old tree", async () => {
+    const api = "https://api.example.com/s/customer/";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 500 } as Response)
+      .mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ _links: {}, first_name: "Jo" }),
+      } as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    vi.spyOn(console, "error").mockImplementation(() => void 0);
+
+    const markup = `<div data-source="{ customer: url }"><p data-text="customer.hasFailedToLoad ? 'failed' : customer.first_name"></p></div>`;
+    const first = tree(markup);
+    const inflow = new InflowCore({ root: first, base: api });
+    inflow.globalContext.url = `${api}customer`;
+    inflow.render();
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+    vi.advanceTimersByTime(250);
+    expect(first.querySelector("p")?.textContent).toBe("failed");
+
+    inflow.unmount();
+    const next = tree(markup);
+    inflow.mount(next);
+    for (let i = 0; i < 30; i++) await Promise.resolve();
+    vi.advanceTimersByTime(250);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(next.querySelector("p")?.textContent).toBe("Jo");
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it("mounts document.body by default", () => {
+    const inflow = new InflowCore({ root: tree(``) });
+    inflow.globalContext.greeting = "Hello";
+    inflow.unmount();
+
+    document.body.innerHTML = `<p data-text="greeting"></p>`;
+    inflow.mount();
+
+    expect(document.querySelector("p")?.textContent).toBe("Hello");
+  });
+});

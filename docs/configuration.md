@@ -6,6 +6,7 @@ Everything `Portal` accepts, plus how sessions, authentication and localization 
 - [Where the session is stored](#where-the-session-is-stored)
 - [The authentication lifecycle](#the-authentication-lifecycle)
 - [Rendering and updates](#rendering-and-updates)
+- [Client-side routers](#client-side-routers)
 - [Localization](#localization)
 - [Formatting values](#formatting-values)
 
@@ -133,6 +134,33 @@ const portal = new Portal({
 document.querySelector("#portal").innerHTML = await loadTemplate();
 portal.requestUpdate();
 ```
+
+## Client-side routers
+
+Inflow renders the subtree it was given at construction — `root`, or `document.body`. A router that navigates without a page load and **replaces** that subtree leaves Inflow rendering the old, detached copy, so the new page never renders. Astro's `<ClientRouter />` (View Transitions) does this: it swaps `<body>` on every navigation, and a bundled script does not run again.
+
+Keep one instance for the whole visit and move it between pages with `unmount()` and `mount()`:
+
+```html
+<script>
+  import { Portal } from "@foxy.io/inflow";
+
+  const portal = new Portal({
+    signInPageUrl: "/sign-in/",
+    homePageUrl: "/",
+    base: "https://your-store.foxycart.com/s/customer/",
+  });
+
+  document.addEventListener("astro:before-swap", () => portal.unmount());
+  document.addEventListener("astro:after-swap", () => portal.mount());
+</script>
+```
+
+- `unmount()` removes the listeners Inflow added to the current page, cancels a pending render and clears `refs`. Updates do nothing until the next `mount()`.
+- `mount(root = document.body)` renders `root` immediately and makes it the subtree every later update renders.
+- Loaded sources, the session and action state carry over, so the next page shows data that is already loaded instead of fetching it again.
+
+`astro:after-swap` fires before the transition animation and not on the first page load, which the constructor already renders. The same two calls work with any router that exposes "before the DOM is replaced" and "after it is replaced" events.
 
 ## Localization
 

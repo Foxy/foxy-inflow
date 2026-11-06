@@ -48,7 +48,8 @@ export class InflowCore {
   // node back out — see the un-stash branch in `render()`.
   #stash = new WeakMap<Comment, { node: ChildNode; owner: Directive }>();
 
-  #root: ChildNode;
+  // `null` between `unmount()` and the next `mount()`.
+  #root: ChildNode | null;
 
   #directiveAliases: Record<string, string> = {};
 
@@ -66,15 +67,51 @@ export class InflowCore {
 
   // Annotated rather than inferred: without this the public type is lodash's
   // DebouncedFunc, which drags `@types/lodash` into the published
-  // declarations. Nothing here uses its `cancel`/`flush`, and the documented
-  // surface is a plain call.
-  requestUpdate: () => void = debounce(() => {
+  // declarations. Only `mount`/`unmount` need `cancel`, and they reach it
+  // through the private field, so the documented surface stays a plain call.
+  #debouncedUpdate = debounce(() => this.#update(), 250);
+
+  requestUpdate: () => void = this.#debouncedUpdate;
+
+  #update() {
+    if (!this.#root) return;
     this.#beforeUpdateHandlers.forEach((fn) => fn());
     this.#beforeUpdateHandlers.length = 0;
     this.#afterUpdateHandlers.length = 0;
     this.render();
     this.#afterUpdateHandlers.forEach((fn) => fn());
-  }, 250);
+  }
+
+  /**
+   * Renders `root` now and makes it the subtree every later update renders.
+   * Loaded sources, the session and action state carry over — this is for a
+   * client-side router that replaces the page's DOM (Astro's `<ClientRouter />`
+   * swaps `<body>`). Runs the full update cycle, so listeners on an element
+   * carried over from the old tree are removed before they are added again.
+   */
+  mount(root: ChildNode = document.body) {
+    this.#debouncedUpdate.cancel();
+    this.#root = root;
+    this.#update();
+  }
+
+  /**
+   * Detaches from the current subtree: removes the listeners Inflow added to
+   * it, cancels a pending update and forgets `refs`, which would otherwise
+   * point at detached elements. Loaded data is kept; compiled expressions and
+   * failed sources are not, so the next page starts like a full page load
+   * would. Updates do nothing until the next `mount()`.
+   */
+  unmount() {
+    this.#debouncedUpdate.cancel();
+    this.#beforeUpdateHandlers.forEach((fn) => fn());
+    this.#beforeUpdateHandlers.length = 0;
+    this.#afterUpdateHandlers.length = 0;
+    this.#functionCache.clear();
+    this.#sourceDirective.forgetFailures();
+    this.globalContext.refs = {};
+    this.#root = null;
+  }
 
   constructor(config?: InflowCoreConfig) {
     this.prefix = config?.prefix ?? "data-";
@@ -162,11 +199,13 @@ export class InflowCore {
   }
 
   render(
-    _node: ChildNode = this.#root,
+    _node: ChildNode | null = this.#root,
     context: Record<string, any> = this.globalContext,
     processedNodes = new WeakSet<ChildNode>(),
     _lang?: string,
   ) {
+    if (!_node) return;
+
     const stashEntry =
       _node instanceof Comment ? this.#stash.get(_node) : void 0;
     const node = stashEntry?.node ?? _node;
