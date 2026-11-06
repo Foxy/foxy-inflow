@@ -271,6 +271,8 @@ describe("InflowCore mount and unmount", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    localStorage.clear();
     document.body.innerHTML = "";
   });
 
@@ -376,9 +378,8 @@ describe("InflowCore mount and unmount", () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  // Compiled expressions are cached by their text and destructure the context
-  // keys present at compile time. A new page starts from scratch, as a full
-  // load would, instead of reusing a function compiled for the old page.
+  // `unmount()` drops compiled expressions, so the new page starts from
+  // scratch, as a full load would, and sees context keys added in between.
   it("compiles expressions afresh for the new tree", () => {
     const inflow = new InflowCore({
       root: tree(`<p data-text="a || b"></p>`),
@@ -427,8 +428,6 @@ describe("InflowCore mount and unmount", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(next.querySelector("p")?.textContent).toBe("Jo");
-    vi.unstubAllGlobals();
-    localStorage.clear();
   });
 
   it("mounts document.body by default", () => {
