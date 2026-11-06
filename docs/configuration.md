@@ -80,6 +80,8 @@ Two modes, and the choice matters if anything else on your domain needs the sess
 
 Choose `"cookie"` when other Foxy code on the same domain has to see the customer as signed in. Choose `"local"` otherwise.
 
+The cookie is `Secure` and `SameSite=Strict`, so serve the portal over https, or from `localhost` while you develop. On plain http, browsers drop it and the customer never stays signed in.
+
 ```js
 new Portal({
   signInPageUrl: "/sign_in.html",
@@ -95,7 +97,7 @@ Signing out clears only this store's own keys, never the whole origin — so unr
 
 When your store has single sign-on (SSO) set up, a customer signed in to the portal can arrive at checkout already signed in. Follow [Set up SSO between the customer portal and checkout](https://www.foxy.io/help/articles/set-up-sso-between-the-customer-portal-and-checkout); its redirect page works with Inflow unchanged.
 
-Inflow's part is one cookie. When the sign-in response includes a checkout login URL — it does once the store has an SSO secret — Inflow writes it to `fx.customer.sso`, in both storage modes. The redirect page reads that cookie, so it has to be on the same domain as your portal. The cookie expires with the session and is removed on sign-out and when the API rejects the session.
+Inflow's part is one cookie. When the sign-in response includes a checkout login URL — it does once the store has an SSO secret — Inflow writes it to `fx.customer.sso`, in both storage modes, with the same `Secure` and `SameSite=Strict` flags. The redirect page reads that cookie, so it has to be on the same domain as your portal. The cookie expires with the session and is removed on sign-out and when the API rejects the session.
 
 That URL signs the customer in to checkout until the session would have expired, so treat it like the session token: it is readable by any script on your domain, the same as the token in local storage.
 

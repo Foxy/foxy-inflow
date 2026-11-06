@@ -13,6 +13,12 @@ export type InflowPortalConfig = {
   v8nTranslations?: Record<string, string>;
 };
 
+// Both session cookies hold a credential. A portal is served over https, or
+// from localhost while developing, which browsers treat as secure, so `secure`
+// costs nothing. Only scripts on this site read them, including after the
+// cross-site redirect from checkout, so `strict` costs nothing either.
+const COOKIE_ATTRIBUTES = "; path=/; secure; samesite=strict";
+
 export class InflowPortal extends InflowCore {
   static defaultTranslations = {
     "sign_in.password.too_big":
@@ -607,7 +613,7 @@ export class InflowPortal extends InflowCore {
       // `fx.customer` is a fixed name other Foxy code reads, so cookie mode is
       // deliberately not namespaced — sharing it across the domain is the point
       // of this mode.
-      document.cookie = `fx.customer=${encodeURIComponent(token)}; path=/`;
+      document.cookie = `fx.customer=${encodeURIComponent(token)}${COOKIE_ATTRIBUTES}`;
     } else {
       this.storage.setItem("session", JSON.stringify(session));
     }
@@ -637,7 +643,7 @@ export class InflowPortal extends InflowCore {
         ? `; max-age=${Math.floor(maxAge)}`
         : "";
 
-    document.cookie = `fx.customer.sso=${encodeURIComponent(url)}; path=/${lifetime}`;
+    document.cookie = `fx.customer.sso=${encodeURIComponent(url)}${COOKIE_ATTRIBUTES}${lifetime}`;
   }
 
   #getToken() {

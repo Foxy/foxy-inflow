@@ -535,6 +535,19 @@ describe("InflowPortal checkout SSO cookie", () => {
     document.cookie =
       "fx.customer.sso=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     document.body.innerHTML = "";
+    vi.restoreAllMocks();
+  });
+
+  // jsdom's `document.cookie` getter hides attributes, so read the writes.
+  it("writes both session cookies as secure and samesite=strict", async () => {
+    const writes = vi.spyOn(document, "cookie", "set");
+    await signIn(ssoPortal("cookie"), { ...SESSION, sso: SSO });
+
+    const written = writes.mock.calls.map(([value]) => String(value));
+    for (const name of ["fx.customer", "fx.customer.sso"]) {
+      const write = written.find((value) => value.startsWith(`${name}=`));
+      expect(write).toContain("; secure; samesite=strict");
+    }
   });
 
   it.each(["local", "cookie"] as const)(
