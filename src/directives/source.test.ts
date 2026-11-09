@@ -371,3 +371,54 @@ describe("patch failure handling", () => {
     );
   });
 });
+
+describe("refreshing a source that failed to load", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+    localStorage.clear();
+    document.body.innerHTML = "";
+  });
+
+  it("fetches the source again", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => void 0);
+
+    let gets = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        ++gets === 1
+          ? new Response("", { status: 500 })
+          : new Response(JSON.stringify({ _links: {}, first_name: "Jo" })),
+      ),
+    );
+
+    // `refresh()` re-renders through the debounced `requestUpdate`, so real
+    // time has to pass — fake timers from the start, for the reason given in
+    // "still refetches after a save the API accepted" above.
+    vi.useFakeTimers();
+
+    const inflow = mount(
+      `<div data-source="{ customer: url }">` +
+        `<button data-on-click="() => customer.refresh()"></button>` +
+        `<p data-text="customer.hasFailedToLoad ? 'failed' : customer.isReady ? 'ready' : 'loading'"></p>` +
+        `</div>`,
+    );
+
+    inflow.globalContext.url = `${API}customer`;
+    inflow.render();
+    await settle();
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(document.querySelector("p")?.textContent).toBe("failed");
+
+    document.querySelector("button")!.click();
+    await vi.advanceTimersByTimeAsync(250);
+    await settle();
+    await vi.advanceTimersByTimeAsync(250);
+
+    expect(gets).toBe(2);
+    expect(document.querySelector("p")?.textContent).toBe("ready");
+  });
+});
