@@ -52,6 +52,18 @@ export class SourceDirective extends Directive {
 
   #patchActions = new Map<string, any>();
 
+  /**
+   * Lets every failed source load again on its next render. Drops the memoized
+   * load too — it resolved to `null` and would otherwise be handed back
+   * without a request. Used by `InflowCore.unmount()`.
+   */
+  forgetFailures() {
+    this.#failedSources.forEach((source) =>
+      this.#loadSource.cache.delete(source),
+    );
+    this.#failedSources.clear();
+  }
+
   // Marks a source stale, drops it from the loader's memo cache, and
   // re-renders — the effect of a successful save, and of an explicit
   // `refresh()` call on a loaded `data-source`. One method so the two call

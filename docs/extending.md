@@ -245,7 +245,7 @@ Its options:
 | `directives`       | extra directives                              |
 | `directiveAliases` | extra aliases                                 |
 
-`Core` does not render on construction — call `requestUpdate()` yourself.
+`Core` does not render on construction — call `requestUpdate()` yourself. To move an instance to a new subtree, use `unmount()` and `mount(root)` — see [Client-side routers](configuration.md#client-side-routers).
 
 ## A standing warning
 
