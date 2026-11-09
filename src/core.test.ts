@@ -439,6 +439,9 @@ describe("InflowCore mount and unmount", () => {
     inflow.mount();
 
     expect(document.querySelector("p")?.textContent).toBe("Hello");
+  });
+});
+
 describe("InflowCore expression cache", () => {
   afterEach(() => {
     document.body.innerHTML = "";
