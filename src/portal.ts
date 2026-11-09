@@ -13,6 +13,12 @@ export type InflowPortalConfig = {
   v8nTranslations?: Record<string, string>;
 };
 
+// Both session cookies hold a credential. A portal is served over https, or
+// from localhost while developing, which browsers treat as secure, so `secure`
+// costs nothing. Only scripts on this site read them, including after the
+// cross-site redirect from checkout, so `strict` costs nothing either.
+const COOKIE_ATTRIBUTES = "; path=/; secure; samesite=strict";
+
 export class InflowPortal extends InflowCore {
   static defaultTranslations = {
     "sign_in.password.too_big":
@@ -579,6 +585,8 @@ export class InflowPortal extends InflowCore {
   }
 
   #removeToken() {
+    this.#writeSsoCookie(null);
+
     if (this.#storage === "cookie") {
       document.cookie =
         "fx.customer=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
@@ -605,10 +613,37 @@ export class InflowPortal extends InflowCore {
       // `fx.customer` is a fixed name other Foxy code reads, so cookie mode is
       // deliberately not namespaced — sharing it across the domain is the point
       // of this mode.
-      document.cookie = `fx.customer=${encodeURIComponent(token)}; path=/`;
+      document.cookie = `fx.customer=${encodeURIComponent(token)}${COOKIE_ATTRIBUTES}`;
     } else {
       this.storage.setItem("session", JSON.stringify(session));
     }
+
+    const sso = session.sso;
+    this.#writeSsoCookie(
+      typeof sso === "string" && sso ? sso : null,
+      Number(session.expires_in),
+    );
+  }
+
+  // The checkout single sign-on redirect page from the Foxy help center reads
+  // the customer's checkout login URL from `fx.customer.sso`, the name the
+  // previous portal wrote. The authenticate response carries it as `sso` when
+  // the store has an SSO secret. Written in both storage modes, because that
+  // page cannot see Inflow's namespaced local storage. A response without one
+  // clears the cookie, so a URL from an earlier session never outlives it.
+  #writeSsoCookie(url: string | null, maxAge?: number) {
+    if (url === null) {
+      document.cookie =
+        "fx.customer.sso=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+      return;
+    }
+
+    const lifetime =
+      maxAge && Number.isFinite(maxAge) && maxAge > 0
+        ? `; max-age=${Math.floor(maxAge)}`
+        : "";
+
+    document.cookie = `fx.customer.sso=${encodeURIComponent(url)}${COOKIE_ATTRIBUTES}${lifetime}`;
   }
 
   #getToken() {
