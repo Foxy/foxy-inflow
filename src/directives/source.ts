@@ -257,6 +257,9 @@ export class SourceDirective extends Directive {
           patch: getPatch(false),
           refresh: () => {
             this.#failedSources.delete(source);
+            // The memo still holds the failed load's `null`; without this the
+            // next render would reuse it and never send a request.
+            this.#loadSource.cache.delete(source);
             update();
           },
         };

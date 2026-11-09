@@ -335,14 +335,17 @@ export class InflowCore {
 
   #createCachedFunction(context: Record<string, any>) {
     return (value: string, additionalContext = {}) => {
-      let cachedFunction = this.#functionCache.get(value);
       const resolvedContext = { ...context, ...additionalContext };
+      const contextKeys = Object.keys(resolvedContext);
+      // The compiled function destructures exactly these keys, so they are
+      // part of the cache key. Keys are identifiers and never contain `;`.
+      const cacheKey = `${contextKeys};${value}`;
+      let cachedFunction = this.#functionCache.get(cacheKey);
 
       if (!cachedFunction) {
-        const contextKeys = Object.keys(resolvedContext);
         const code = `const{${contextKeys}}=this;return(${value});`;
         cachedFunction = new Function(code);
-        this.#functionCache.set(value, cachedFunction);
+        this.#functionCache.set(cacheKey, cachedFunction);
       }
 
       return cachedFunction.call(resolvedContext);
